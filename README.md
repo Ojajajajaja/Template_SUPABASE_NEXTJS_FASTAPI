@@ -20,7 +20,7 @@ This template provides a complete base for a fullstack project using:
 
 1. **Clone the template**
    ```bash
-   git clone <repo-url> project-name
+   git clone https://github.com/Ojajajajaja/Template_SUPABASE_NEXTJS_FASTAPI.git project-name
    cd project-name
    ```
 
@@ -34,6 +34,7 @@ The installation script will automatically:
 - Initialize the Supabase environment
 - Generate environment files
 - Build and start all services
+- Remove .git to start your own depot
 
 ## 📁 Detailed Structure
 
