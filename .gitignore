@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+*.lock
+
+# Production builds
+.next/
+dist/
+backend/build/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.config
+
+# Supabase
+supabase/.env
+supabase/.branches
+supabase/.temp
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Nginx generated configs
+/nginx/
+
+# Logs
+*.log
+logs/
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Optional npm cache directory
+.npm
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+.env
+
+# Temporary files
+.tmp/
+temp/
