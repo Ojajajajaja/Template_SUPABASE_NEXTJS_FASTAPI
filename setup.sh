@@ -1,1 +1,0 @@
-.setup/scripts/setup.sh

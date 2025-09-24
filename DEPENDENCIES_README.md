@@ -12,7 +12,7 @@ This guide explains the correct order for setting up the Template SUPABASE NEXTJ
 # Install all system dependencies
 make install-deps
 # OR
-./install-dependencies.sh
+./.setup/scripts/install-dependencies.sh
 ```
 
 **What this installs:**
@@ -33,7 +33,7 @@ make install-deps
 # For development environment
 make dev
 # OR
-./setup.sh
+./.setup/scripts/setup.sh
 ```
 
 ### 3. Production Deployment
@@ -187,13 +187,11 @@ Les scripts existants ont été modifiés pour ne plus installer les dépendance
 
 ```
 Template_SUPABASE_NEXTJS_FASTAPI/
-├── install-dependencies.sh    # System dependencies installer
-├── setup.sh → .setup/scripts/setup.sh       # Project setup (symlink)
-├── build.sh → .setup/scripts/build.sh       # Build with PM2 (symlink)
-├── deploy.sh → .setup/scripts/deploy.sh     # Deploy with Nginx (symlink)
 ├── Makefile                   # Orchestration commands
 └── .setup/                    # Configuration files
     ├── scripts/               # All project scripts
+    │   ├── install-dependencies.sh # System dependencies installer
+    │   ├── check-dependencies.sh   # Dependencies status checker
     │   ├── setup.sh           # Main setup script
     │   ├── build.sh           # Main build script
     │   ├── deploy.sh          # Main deploy script

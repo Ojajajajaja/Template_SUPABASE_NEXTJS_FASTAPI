@@ -5,6 +5,7 @@
 
 echo "Checking required dependencies..."
 echo "If any dependency is missing, please run: make install-deps"
+echo "Or directly: ./.setup/scripts/install-dependencies.sh"
 echo ""
 
 # Initialize error count
@@ -64,7 +65,7 @@ if [ $ERROR_COUNT -gt 0 ]; then
     echo ""
     echo "❌ $ERROR_COUNT dependencies are missing!"
     echo "Please run: make install-deps"
-    echo "Or manually: ./install-dependencies.sh"
+    echo "Or directly: ./.setup/scripts/install-dependencies.sh"
     exit 1
 else
     echo "✅ All required dependencies are installed!"

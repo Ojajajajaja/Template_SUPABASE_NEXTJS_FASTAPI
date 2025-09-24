@@ -54,14 +54,14 @@ help:
 	@echo "📖 For detailed setup guide, see: DEPENDENCIES_README.md"
 	@echo ""
 
-# Check dependencies status
-check-deps-status:
-	@./check-dependencies.sh
-
 # Dependencies installation
 install-deps:
 	@echo "📦 Installing system dependencies..."
-	@./install-dependencies.sh
+	@./.setup/scripts/install-dependencies.sh
+
+# Check dependencies status
+check-deps-status:
+	@./.setup/scripts/check-dependencies.sh
 
 # Development workflow
 dev: setup
@@ -102,15 +102,15 @@ check-deps:
 # Individual setup scripts
 setup:
 	@echo "🔧 Running project setup..."
-	@./setup.sh
+	@./.setup/scripts/setup.sh
 
 build:
 	@echo "🏗️  Running build process..."
-	@./build.sh
+	@./.setup/scripts/build.sh
 
 deploy:
 	@echo "🚀 Running deployment process..."
-	@./deploy.sh
+	@./.setup/scripts/deploy.sh
 
 # Frontend management - Development
 frontend-start-dev:

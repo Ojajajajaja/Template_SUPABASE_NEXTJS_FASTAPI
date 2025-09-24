@@ -2,19 +2,17 @@
 
 ## Vue d'ensemble
 
-La structure des scripts a été réorganisée pour une meilleure maintenabilité et clarté. Tous les scripts ont été déplacés dans `.setup/scripts/` avec des liens symboliques à la racine pour maintenir la compatibilité.
+La structure des scripts a été réorganisée pour une meilleure maintenabilité et clarté. Tous les scripts ont été déplacés dans `.setup/scripts/` pour une organisation complète et centraliser toute la logique.
 
 ## Nouvelle Structure
 
 ```
 Template_SUPABASE_NEXTJS_FASTAPI/
-├── install-dependencies.sh       # Installation des dépendances système
-├── setup.sh → .setup/scripts/setup.sh      # Script principal de setup (symlink)
-├── build.sh → .setup/scripts/build.sh      # Script principal de build (symlink)
-├── deploy.sh → .setup/scripts/deploy.sh    # Script principal de deploy (symlink)
 ├── Makefile                       # Commandes d'orchestration
 └── .setup/
     ├── scripts/                   # 📁 Tous les scripts du projet
+    │   ├── install-dependencies.sh # Installation des dépendances système
+    │   ├── check-dependencies.sh   # Vérification des dépendances
     │   ├── setup.sh               # Script principal de setup
     │   ├── build.sh               # Script principal de build
     │   ├── deploy.sh              # Script principal de deploy
@@ -43,41 +41,33 @@ Template_SUPABASE_NEXTJS_FASTAPI/
 - **Sous-scripts** organisés par fonction
 
 ### ✅ Compatibilité Maintenue
-- **Liens symboliques** à la racine pour la compatibilité
 - **Makefile inchangé** - toutes les commandes fonctionnent
 - **Documentation existante** reste valide
+- **Accès centralisé** via le Makefile
 
 ### ✅ Évolutivité
 - **Ajout facile** de nouveaux scripts dans les bons dossiers
 - **Structure extensible** pour de nouvelles fonctionnalités
 - **Maintenance simplifiée** grâce à l'organisation
 
-## Gestion des Liens Symboliques
+## Gestion Centralisée
 
-Les scripts principaux supportent maintenant les deux modes d'exécution :
+Tous les scripts sont maintenant centralisés dans `.setup/scripts/` et accessibles uniquement via le Makefile :
 
-### Exécution Directe
+### Exécution via Makefile (Recommandé)
 ```bash
-./.setup/scripts/setup.sh    # Script original
+make install-deps       # Installation des dépendances
+make setup              # Configuration du projet
+make build              # Build avec PM2  
+make deploy             # Déploiement avec Nginx
 ```
 
-### Exécution via Lien Symbolique
+### Exécution Directe (Si nécessaire)
 ```bash
-./setup.sh                   # Lien symbolique
-make setup                   # Via Makefile
-```
-
-### Résolution Automatique des Chemins
-Chaque script principal détecte automatiquement son mode d'exécution :
-
-```bash
-if [[ -L "${BASH_SOURCE[0]}" ]]; then
-    # Appelé via lien symbolique
-    SCRIPT_DIR="$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}")")" && pwd)"
-else
-    # Appelé directement
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-fi
+./.setup/scripts/install-dependencies.sh    # Installation des dépendances
+./.setup/scripts/setup.sh                   # Configuration
+./.setup/scripts/build.sh                   # Build
+./.setup/scripts/deploy.sh                  # Déploiement
 ```
 
 ## Impact sur l'Utilisation
@@ -88,9 +78,6 @@ fi
 make setup
 make build  
 make deploy
-./setup.sh
-./build.sh
-./deploy.sh
 ```
 
 ### Pour les Développeurs
@@ -98,15 +85,16 @@ make deploy
 - Scripts logiquement groupés
 - Chemins relatifs cohérents
 - Documentation par dossier
+- Racine du projet propre
 
 ## Tests de Validation
 
 Tous les modes d'exécution ont été testés :
 
 - ✅ **Makefile** : `make setup`, `make build`, `make deploy`
-- ✅ **Liens symboliques** : `./setup.sh`, `./build.sh`, `./deploy.sh`
 - ✅ **Exécution directe** : `./.setup/scripts/setup.sh`
 - ✅ **Résolution des chemins** : Tous les sous-scripts trouvés correctement
+- ✅ **Racine propre** : Aucun script ou lien à la racine
 
 ## Migration Complète
 
