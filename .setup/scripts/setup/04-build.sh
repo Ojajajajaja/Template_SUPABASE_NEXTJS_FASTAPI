@@ -35,7 +35,7 @@ docker compose exec -T db pg_isready -U postgres -d postgres
 
 # Copy and execute seed SQL script
 echo "Copying seed script to database..."
-docker compose cp ../.setup/supabase/seed-oja.sql db:/tmp/seed-oja.sql
+docker compose cp ../../.setup/supabase/seed-oja.sql db:/tmp/seed-oja.sql
 
 echo "Executing database seed script..."
 docker compose exec -T db psql -U postgres -d postgres -f /tmp/seed-oja.sql
