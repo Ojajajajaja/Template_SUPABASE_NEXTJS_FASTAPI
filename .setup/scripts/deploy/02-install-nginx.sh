@@ -52,30 +52,23 @@ if [[ ! -d "$NGINX_CONFIG_DIR" ]]; then
     exit 1
 fi
 
-log_info "Updating system packages..."
-apt update
-
-# Install Nginx
-log_info "Installing Nginx..."
+# Check if Nginx is installed
 if ! command -v nginx &> /dev/null; then
-    apt install -y nginx
-    log_success "Nginx installed successfully"
+    log_error "Nginx is not installed"
+    log_info "Please run 'make install-deps' or './install-dependencies.sh' first"
+    exit 1
 else
     log_info "Nginx is already installed"
 fi
 
-# Install Certbot (Let's Encrypt)
-log_info "Installing Certbot (Let's Encrypt)..."
+# Check if Certbot is installed
 if ! command -v certbot &> /dev/null; then
-    apt install -y certbot python3-certbot-nginx
-    log_success "Certbot installed successfully"
+    log_error "Certbot is not installed"
+    log_info "Please run 'make install-deps' or './install-dependencies.sh' first"
+    exit 1
 else
     log_info "Certbot is already installed"
 fi
-
-# Install other useful tools
-log_info "Installing additional tools..."
-apt install -y curl wget ufw
 
 # Start and enable Nginx
 log_info "Configuring Nginx service..."
@@ -83,12 +76,16 @@ systemctl enable nginx
 systemctl start nginx
 log_success "Nginx service enabled and started"
 
-# Configure basic firewall
+# Configure basic firewall (if UFW is available)
 log_info "Configuring firewall..."
-ufw --force enable
-ufw allow 'Nginx Full'
-ufw allow OpenSSH
-log_success "Firewall configured"
+if command -v ufw &> /dev/null; then
+    ufw --force enable
+    ufw allow 'Nginx Full'
+    ufw allow OpenSSH
+    log_success "Firewall configured"
+else
+    log_warning "UFW not available, skipping firewall configuration"
+fi
 
 # Copy configurations to sites-available
 log_info "Copying Nginx configurations..."

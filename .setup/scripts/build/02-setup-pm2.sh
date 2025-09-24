@@ -42,14 +42,9 @@ log_info "Project directory: $PROJECT_ROOT"
 
 # Check if PM2 is installed globally
 if ! command -v pm2 &> /dev/null; then
-    log_info "PM2 not found, installing globally..."
-    if command -v npm &> /dev/null; then
-        npm install -g pm2
-        log_success "PM2 installed successfully"
-    else
-        log_error "npm not found. Please install Node.js and npm first"
-        exit 1
-    fi
+    log_error "PM2 is not installed"
+    log_info "Please run 'make install-deps' or './install-dependencies.sh' first"
+    exit 1
 else
     log_info "PM2 is already installed"
 fi

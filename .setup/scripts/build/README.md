@@ -46,7 +46,7 @@ Ce script configure l'utilisateur de production et déplace le projet dans son e
 - ✅ Configuration sudo pour les commandes nécessaires
 
 **Prérequis :**
-- Doit être exécuté avec `sudo`
+- PM2 doit être installé (utilisez `make install-deps`)
 - Variables `PROD_USERNAME` et `PROD_PASSWORD` configurées dans `.env.config`
 - Le répertoire home sera automatiquement `/home/PROD_USERNAME`
 
@@ -62,7 +62,7 @@ Ce script build l'application Next.js pour la production.
 - ✅ Affichage des informations de taille
 
 **Prérequis :**
-- Node.js et npm installés
+- Node.js et npm installés (utilisez `make install-deps`)
 - Répertoire `frontend/` avec `package.json`
 - Script `build` défini dans `package.json`
 
@@ -71,11 +71,16 @@ Ce script build l'application Next.js pour la production.
 Ce script configure PM2 pour la gestion des processus en production.
 
 **Fonctionnalités :**
-- ✅ Installation de PM2 si nécessaire
+- ✅ Vérification que PM2 est installé
 - ✅ Lecture de la configuration depuis `.env.config`
 - ✅ Génération du fichier `ecosystem.config.js`
 - ✅ Configuration des logs
 - ✅ Validation de la configuration PM2
+
+**Prérequis :**
+- PM2 installé (utilisez `make install-deps`)
+- Node.js et npm installés (utilisez `make install-deps`)
+- Configuration `.env.config` présente
 
 **Fichiers générés :**
 ```
@@ -134,19 +139,37 @@ pm2 delete all
 pm2 monit
 ```
 
+## Prérequis Système
+
+**IMPORTANT** : Avant d'utiliser ces scripts, vous devez installer toutes les dépendances système :
+
+```bash
+# Installation des dépendances système (à faire EN PREMIER)
+make install-deps
+# OU
+./install-dependencies.sh
+```
+
+Cela installera :
+- Node.js & npm
+- Python 3 & UV
+- PM2
+- Docker
+- Et autres dépendances nécessaires
+
 ## Prérequis
 
+- Toutes les dépendances système installées (`make install-deps`)
 - Utilisateur de production configuré (variables dans `.env.config`)
-- Node.js et npm installés
-- Python 3.12+ pour le backend
 - Frontend buildé (`.next/` directory)
 - Configuration `.env.config` présente
 
 ## Résolution de Problèmes
 
-### Erreur "PM2 not found"
+### Erreur "PM2 not found" ou "Dependencies missing"
 ```bash
-npm install -g pm2
+# Installer toutes les dépendances système
+make install-deps
 ```
 
 ### Erreur "Frontend build not found"

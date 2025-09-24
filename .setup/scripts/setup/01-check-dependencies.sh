@@ -4,6 +4,11 @@
 # Checks for uv, docker compose and npm
 
 echo "Checking required dependencies..."
+echo "If any dependency is missing, please run: make install-deps"
+echo ""
+
+# Initialize error count
+ERROR_COUNT=0
 
 # Check uv
 echo "=== Checking uv ==="
@@ -12,7 +17,8 @@ if command -v uv &> /dev/null; then
     uv --version
 else
     echo "❌ uv is not installed"
-    echo "Please install uv : https://docs.astral.sh/uv/"
+    echo "Please run: make install-deps"
+    ((ERROR_COUNT++))
 fi
 
 echo ""
@@ -28,11 +34,13 @@ if command -v docker &> /dev/null; then
         docker compose version
     else
         echo "❌ Docker Compose is not available"
-        echo "Please install Docker Compose : https://docs.docker.com/compose/install/"
+        echo "Please run: make install-deps"
+        ((ERROR_COUNT++))
     fi
 else
     echo "❌ Docker is not installed"
-    echo "Please install Docker : https://docs.docker.com/get-docker/"
+    echo "Please run: make install-deps"
+    ((ERROR_COUNT++))
 fi
 
 echo ""
@@ -44,8 +52,20 @@ if command -v npm &> /dev/null; then
     npm --version
 else
     echo "❌ npm is not installed"
-    echo "Please install Node.js (which includes npm) : https://nodejs.org/"
+    echo "Please run: make install-deps"
+    ((ERROR_COUNT++))
 fi
 
 echo ""
 echo "Dependency check completed."
+
+# Exit with error if any dependency is missing
+if [ $ERROR_COUNT -gt 0 ]; then
+    echo ""
+    echo "❌ $ERROR_COUNT dependencies are missing!"
+    echo "Please run: make install-deps"
+    echo "Or manually: ./install-dependencies.sh"
+    exit 1
+else
+    echo "✅ All required dependencies are installed!"
+fi

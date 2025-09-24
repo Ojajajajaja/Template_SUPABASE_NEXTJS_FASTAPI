@@ -1,7 +1,7 @@
 # Makefile for Template SUPABASE NEXTJS FASTAPI
 # Provides convenient commands for development and production
 
-.PHONY: help dev prod setup build deploy frontend-start-dev frontend-stop-dev frontend-start-prod frontend-stop-prod backend-start-dev backend-stop-dev backend-start-prod backend-stop-prod supabase-start supabase-stop supabase-restart clean
+.PHONY: help dev prod install-deps check-deps-status setup build deploy frontend-start-dev frontend-stop-dev frontend-start-prod frontend-stop-prod backend-start-dev backend-stop-dev backend-start-prod backend-stop-prod supabase-start supabase-stop supabase-restart clean
 
 # Default target
 help:
@@ -11,9 +11,15 @@ help:
 	@echo ""
 	@echo "Available commands:"
 	@echo ""
+	@echo "Dependencies & Setup:"
+	@echo "  make install-deps    - Install all system dependencies (run FIRST)"
+	@echo "  make check-deps-status - Check which dependencies are installed"
+	@echo "  make setup           - Run initial project setup"
+	@echo ""
 	@echo "Development:"
 	@echo "  make dev             - Setup project for development"
-	@echo "  make setup           - Run initial project setup"
+	@echo ""
+	@echo "⚠️  IMPORTANT: Run 'make install-deps' before any other commands"
 	@echo ""
 	@echo "Production:"
 	@echo "  make prod            - Full production deployment (setup + build + deploy)"
@@ -38,9 +44,24 @@ help:
 	@echo "  make supabase-restart- Restart Supabase services"
 	@echo ""
 	@echo "Utilities:"
+	@echo "  make install         - Install project dependencies (npm, pip)"
 	@echo "  make clean           - Clean temporary files and stop all services"
+	@echo "  make status          - Show project status"
+	@echo "  make logs            - Show application logs"
+	@echo "  make info            - Show environment information"
 	@echo "  make help            - Show this help message"
 	@echo ""
+	@echo "📖 For detailed setup guide, see: DEPENDENCIES_README.md"
+	@echo ""
+
+# Check dependencies status
+check-deps-status:
+	@./check-dependencies.sh
+
+# Dependencies installation
+install-deps:
+	@echo "📦 Installing system dependencies..."
+	@./install-dependencies.sh
 
 # Development workflow
 dev: setup
@@ -51,11 +72,32 @@ dev: setup
 	@echo "  make backend-start-dev   - Start backend (FastAPI)"
 	@echo "  make supabase-start      - Start Supabase services"
 
-# Production workflow
-prod: setup build deploy
+# Production workflow (with dependencies check)
+prod: check-deps setup build deploy
 	@echo "✓ Production deployment completed!"
 	@echo ""
 	@echo "Your applications are now running in production mode."
+
+# Check if dependencies are installed
+check-deps:
+	@echo "🔍 Checking system dependencies..."
+	@if ! command -v uv >/dev/null 2>&1; then \
+		echo "❌ UV not found. Please run 'make install-deps' first."; \
+		exit 1; \
+	fi
+	@if ! command -v nginx >/dev/null 2>&1; then \
+		echo "❌ Nginx not found. Please run 'make install-deps' first."; \
+		exit 1; \
+	fi
+	@if ! command -v docker >/dev/null 2>&1; then \
+		echo "❌ Docker not found. Please run 'make install-deps' first."; \
+		exit 1; \
+	fi
+	@if ! command -v pm2 >/dev/null 2>&1; then \
+		echo "❌ PM2 not found. Please run 'make install-deps' first."; \
+		exit 1; \
+	fi
+	@echo "✓ All dependencies are installed"
 
 # Individual setup scripts
 setup:

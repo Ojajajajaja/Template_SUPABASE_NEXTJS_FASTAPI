@@ -49,16 +49,20 @@ Le script principal [deploy.sh](file:///Users/oja/Project/tools/Template_SUPABAS
 
 ### 02-install-nginx.sh
 
-Ce script installe et configure tous les composants nécessaires sur le serveur de production.
+Ce script configure Nginx et les services associés sur le serveur de production.
 
 **Fonctionnalités :**
-- ✅ Installation de Nginx
-- ✅ Installation de Certbot (Let's Encrypt)
-- ✅ Installation et configuration du firewall UFW
+- ✅ Vérification que Nginx est installé
+- ✅ Vérification que Certbot est installé
+- ✅ Configuration du firewall UFW (si disponible)
 - ✅ Copie des configurations vers `/etc/nginx/sites-available/`
 - ✅ Création des liens symboliques vers `/etc/nginx/sites-enabled/`
 - ✅ Test et rechargement de la configuration Nginx
-- ✅ Configuration automatique du firewall
+
+**Prérequis :**
+- Doit être exécuté avec `sudo`
+- Nginx et Certbot installés (utilisez `make install-deps`)
+- Configurations Nginx générées dans `nginx/`
 
 ### 03-setup-https.sh
 
@@ -74,6 +78,7 @@ Ce script configure les certificats SSL/TLS avec Let's Encrypt pour tous les dom
 
 **Prérequis :**
 - Doit être exécuté avec `sudo`
+- Nginx et Certbot installés (utilisez `make install-deps`)
 - Nginx doit être installé et fonctionnel
 - Les DNS doivent pointer vers le serveur
 - Les ports 80 et 443 doivent être accessibles depuis Internet
@@ -95,6 +100,23 @@ nginx/
 └── supabase.conf     # Configuration pour Supabase
 ```
 
+## Prérequis Système
+
+**IMPORTANT** : Avant d'utiliser ces scripts, vous devez installer toutes les dépendances système :
+
+```bash
+# Installation des dépendances système (à faire EN PREMIER)
+make install-deps
+# OU
+./install-dependencies.sh
+```
+
+Cela installera :
+- Nginx
+- Certbot (Let's Encrypt)
+- UFW (firewall)
+- Et autres dépendances nécessaires
+
 ## Variables d'Environnement Requises
 
 Dans le fichier `.setup/.env.config` :
@@ -109,6 +131,22 @@ Dans le fichier `.setup/.env.config` :
 | `KONG_HTTP_PORT` | Port Kong/Supabase | `8000` |
 
 ## Déploiement sur Serveur
+
+**Note** : Avec le nouveau système de dépendances, le processus est simplifié :
+
+1. **Installer les dépendances système** :
+   ```bash
+   # Sur le serveur de production
+   make install-deps
+   ```
+
+2. **Générer et déployer** :
+   ```bash
+   # Générer les configurations
+   make deploy
+   ```
+
+L'ancien processus manuel reste disponible si nécessaire :
 
 Une fois les configurations générées :
 
