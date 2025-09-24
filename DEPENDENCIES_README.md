@@ -188,9 +188,17 @@ Les scripts existants ont été modifiés pour ne plus installer les dépendance
 ```
 Template_SUPABASE_NEXTJS_FASTAPI/
 ├── install-dependencies.sh    # System dependencies installer
-├── setup.sh                   # Project setup
-├── build.sh                   # Build with PM2
-├── deploy.sh                  # Deploy with Nginx
+├── setup.sh → .setup/scripts/setup.sh       # Project setup (symlink)
+├── build.sh → .setup/scripts/build.sh       # Build with PM2 (symlink)
+├── deploy.sh → .setup/scripts/deploy.sh     # Deploy with Nginx (symlink)
 ├── Makefile                   # Orchestration commands
 └── .setup/                    # Configuration files
+    ├── scripts/               # All project scripts
+    │   ├── setup.sh           # Main setup script
+    │   ├── build.sh           # Main build script
+    │   ├── deploy.sh          # Main deploy script
+    │   ├── setup/             # Setup sub-scripts
+    │   ├── build/             # Build sub-scripts
+    │   └── deploy/            # Deploy sub-scripts
+    └── nginx/                 # Nginx templates
 ```
