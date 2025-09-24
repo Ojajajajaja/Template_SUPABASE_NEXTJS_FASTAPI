@@ -9,10 +9,12 @@ This guide explains the correct order for setting up the Template SUPABASE NEXTJ
 ### 1. Install System Dependencies (FIRST)
 
 ```bash
-# Install all system dependencies
+# Install all system dependencies (recommended: run as root)
+sudo make install-deps
+# OR directly as root
+sudo ./.setup/scripts/install-dependencies.sh
+# OR as regular user (will prompt for sudo)
 make install-deps
-# OR
-./.setup/scripts/install-dependencies.sh
 ```
 
 **What this installs:**
@@ -26,6 +28,13 @@ make install-deps
 - System packages and build tools
 
 **Important:** After installation, you may need to log out and back in for Docker group membership to take effect.
+
+**Recommended:** Run the installation script as root for optimal setup:
+```bash
+sudo make install-deps
+# OR
+sudo ./.setup/scripts/install-dependencies.sh
+```
 
 ### 2. Development Setup
 
