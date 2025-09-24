@@ -96,11 +96,17 @@ docker compose up -d
 
 ## 🛠️ Available Scripts
 
-- `./setup.sh`: Complete installation script
+### Development Scripts
+- `./setup.sh`: Complete installation script (development setup)
 - `.setup/scripts/01-check-dependencies.sh`: Dependency check
 - `.setup/scripts/02-init-supabase.sh`: Supabase initialization
 - `.setup/scripts/03-generate_env.py`: Environment file generation
 - `.setup/scripts/04-build.sh`: Service build and startup
+
+### Deployment Scripts
+- `./deploy.sh nginx`: Generate Nginx configurations for production
+- `./deploy.sh all`: Complete deployment preparation
+- `./deploy.sh help`: Show deployment options
 
 ## 🔐 Security
 
