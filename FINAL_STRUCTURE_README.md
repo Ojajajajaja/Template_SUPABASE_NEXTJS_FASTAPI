@@ -94,12 +94,25 @@ git clone <repo> myproject
 cd myproject
 
 # 2. Installer les dépendances système
-make install-deps
+sudo make install-deps
 
 # 3a. Pour le développement
 make dev
 
-# 3b. Pour la production
+# 3b. Pour la production complète (nouvel ordre)
+make prod  # setup → setup-user → build → deploy
+```
+
+### 🔄 Workflow Production Détaillé
+
+```bash
+# Workflow complet en production
+make setup        # 1. Configuration du projet
+make setup-user   # 2. Création utilisateur + déplacement
+make build        # 3. Build avec PM2
+make deploy       # 4. Déploiement Nginx/HTTPS
+
+# Ou tout d'un coup
 make prod
 ```
 

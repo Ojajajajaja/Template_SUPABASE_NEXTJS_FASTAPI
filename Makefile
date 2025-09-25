@@ -22,7 +22,8 @@ help:
 	@echo "⚠️  IMPORTANT: Run 'make install-deps' before any other commands"
 	@echo ""
 	@echo "Production:"
-	@echo "  make prod            - Full production deployment (setup + build + deploy)"
+	@echo "  make prod            - Full production deployment (setup + user + build + deploy)"
+	@echo "  make setup-user      - Setup production user and relocate project"
 	@echo "  make build           - Build and start applications with PM2"
 	@echo "  make deploy          - Deploy with Nginx and HTTPS"
 	@echo ""
@@ -73,7 +74,7 @@ dev: setup
 	@echo "  make supabase-start      - Start Supabase services"
 
 # Production workflow (with dependencies check)
-prod: check-deps setup build deploy
+prod: check-deps setup setup-user build deploy
 	@echo "✓ Production deployment completed!"
 	@echo ""
 	@echo "Your applications are now running in production mode."
@@ -102,15 +103,19 @@ check-deps:
 # Individual setup scripts
 setup:
 	@echo "🔧 Running project setup..."
-	@./.setup/scripts/setup.sh
+	@./.setup/scripts/01-setup.sh
+
+setup-user:
+	@echo "👥 Setting up production user..."
+	@./.setup/scripts/02-setup-user.sh
 
 build:
 	@echo "🏗️  Running build process..."
-	@./.setup/scripts/build.sh
+	@./.setup/scripts/03-build.sh
 
 deploy:
 	@echo "🚀 Running deployment process..."
-	@./.setup/scripts/deploy.sh
+	@./.setup/scripts/04-deploy.sh
 
 # Frontend management - Development
 frontend-start-dev:

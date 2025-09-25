@@ -41,7 +41,7 @@ log_info "Project directory: $PROJECT_ROOT"
 # Check root permissions
 if [[ $EUID -ne 0 ]]; then
    log_error "This script must be run with sudo"
-   log_info "Usage: sudo .setup/scripts/build/00-setup-user.sh"
+   log_info "Usage: sudo ./.setup/scripts/02-setup-user.sh"
    exit 1
 fi
 
@@ -213,13 +213,15 @@ echo "==============================================="
 echo "Project location: $NEW_PROJECT_PATH"
 echo ""
 echo "Available commands:"
-echo "  ./setup.sh   - Initial setup"
-echo "  ./deploy.sh  - Deploy with Nginx/HTTPS"
-echo "  ./build.sh   - Build and start with PM2"
+echo "  make setup           - Initial project setup (if not done)"
+echo "  make build           - Build and start with PM2"
+echo "  make deploy          - Deploy with Nginx/HTTPS"
+echo "  make prod            - Full production workflow"
 echo ""
-echo "PM2 commands:"
-echo "  pm2 status   - Check services status"
-echo "  pm2 logs     - View logs"
+echo "Or use individual scripts:"
+echo "  ./.setup/scripts/01-setup.sh   - Project setup"
+echo "  ./.setup/scripts/03-build.sh   - Build and PM2"
+echo "  ./.setup/scripts/04-deploy.sh  - Nginx deployment"
 echo ""
 EOF
 
@@ -253,3 +255,79 @@ echo ""
 log_info "The user will automatically be in the project directory"
 log_info "and have access to all project scripts."
 echo ""
+
+# Initialize sudo session for the production user to avoid password prompts
+log_info "Initializing sudo session for user $PROD_USERNAME..."
+if sudo -u "$PROD_USERNAME" sudo -n true 2>/dev/null; then
+    log_success "Sudo session already active for $PROD_USERNAME"
+else
+    log_info "Activating sudo session for $PROD_USERNAME (password required once)..."
+    # Use the production user password to initialize sudo session
+    echo "$PROD_PASSWORD" | sudo -u "$PROD_USERNAME" -S sudo -v
+    if [[ $? -eq 0 ]]; then
+        log_success "Sudo session initialized for $PROD_USERNAME"
+    else
+        log_warning "Could not initialize sudo session. User may need to enter password later."
+    fi
+fi
+
+# If project was moved, provide guidance for continuing the workflow
+if [[ "$MOVE_NEEDED" == "true" ]]; then
+    echo ""
+    log_info "=== IMPORTANT: Project has been relocated ==="
+    log_warning "The project has been moved to: $NEW_PROJECT_PATH"
+    log_warning "You need to continue the workflow from the new location."
+    echo ""
+    
+    # Ask user how they want to continue
+    log_info "How would you like to continue?"
+    echo "1) Switch to production user and continue automatically"
+    echo "2) Continue as current user from new location"
+    echo "3) Exit and continue manually later"
+    echo ""
+    read -p "Your choice (1, 2, or 3): " continue_choice
+    
+    case $continue_choice in
+        1)
+            log_info "Switching to production user $PROD_USERNAME..."
+            log_info "You will be automatically in the project directory"
+            log_info "Sudo session is already initialized - no password required!"
+            echo ""
+            # Execute the continuation script
+            exec "$NEW_PROJECT_PATH/.setup/scripts/continue-after-move.sh" "$NEW_PROJECT_PATH" "$PROD_USERNAME"
+            ;;
+        2)
+            log_info "Continuing as current user..."
+            log_warning "Changing to new project directory: $NEW_PROJECT_PATH"
+            cd "$NEW_PROJECT_PATH"
+            echo ""
+            log_success "You are now in the relocated project directory."
+            log_info "Continue with: make build && make deploy"
+            echo ""
+            # Start a new shell in the correct directory
+            exec $SHELL
+            ;;
+        3)
+            log_info "Manual continuation instructions:"
+            echo ""
+            log_info "Option A - Switch to production user:"
+            log_info "  su - $PROD_USERNAME"
+            log_info "  # You'll be automatically in the project directory"
+            log_info "  # Sudo session is initialized - no password required!"
+            log_info "  make build && make deploy"
+            echo ""
+            log_info "Option B - Continue as current user:"
+            log_info "  cd $NEW_PROJECT_PATH"
+            log_info "  make build && make deploy"
+            echo ""
+            ;;
+        *)
+            log_warning "Invalid choice. Please continue manually:"
+            log_info "  cd $NEW_PROJECT_PATH"
+            log_info "  make build && make deploy"
+            ;;
+    esac
+else
+    log_info "Project was not moved. You can continue with the workflow normally."
+    log_success "Sudo session is initialized for $PROD_USERNAME - no password required!"
+fi

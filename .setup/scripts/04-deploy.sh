@@ -5,15 +5,30 @@
 
 set -e  # Stop script if a command fails
 
+# Determine project root directory (go up two levels from .setup/scripts/)
+# Handle both direct execution and symbolic links
+if [[ -L "${BASH_SOURCE[0]}" ]]; then
+    # If called via symbolic link, resolve the actual script location
+    SCRIPT_DIR="$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}")")" && pwd)"
+else
+    # If called directly
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../" && pwd)"
+
+# Change to project root
+cd "$PROJECT_ROOT"
+
 echo "========================================"
 echo "    PROJECT DEPLOYMENT SCRIPT"
 echo "========================================"
+echo "Project root: $PROJECT_ROOT"
 echo ""
 
 # 1) Generate Nginx configurations
 echo "1) Generating Nginx configurations..."
 echo "----------------------------------------"
-.setup/scripts/deploy/01-generate-nginx-configs.sh
+./.setup/scripts/deploy/01-generate-nginx-configs.sh
 echo ""
 read -p "Press Enter to continue..."
 
@@ -26,7 +41,7 @@ echo "⚠️  This step requires sudo privileges"
 echo "   The script will install: Nginx, Certbot, UFW"
 echo "   And configure the generated configurations"
 read -p "Press Enter to continue or Ctrl+C to skip..."
-sudo .setup/scripts/deploy/02-install-nginx.sh
+sudo "./.setup/scripts/deploy/02-install-nginx.sh"
 echo ""
 read -p "Press Enter to continue..."
 
@@ -39,7 +54,7 @@ echo "⚠️  This step requires sudo privileges"
 echo "   The script will configure SSL certificates for all domains"
 echo "   Make sure your DNS records point to this server!"
 read -p "Press Enter to continue or Ctrl+C to skip..."
-sudo .setup/scripts/deploy/03-setup-https.sh
+sudo "./.setup/scripts/deploy/03-setup-https.sh"
 echo ""
 read -p "Press Enter to continue..."
 

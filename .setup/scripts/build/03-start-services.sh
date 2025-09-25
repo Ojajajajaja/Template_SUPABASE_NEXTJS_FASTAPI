@@ -37,6 +37,12 @@ ECOSYSTEM_CONFIG="$PROJECT_ROOT/ecosystem.config.js"
 log_info "=== Services Launch Process ==="
 log_info "Project directory: $PROJECT_ROOT"
 
+# Check if we're running as production user or with proper permissions
+if [[ -n "$SUDO_USER" ]]; then
+    log_warning "Running with sudo. PM2 processes will be owned by $SUDO_USER"
+    log_info "Consider running as the production user directly for better PM2 management"
+fi
+
 # Check if PM2 is installed
 if ! command -v pm2 &> /dev/null; then
     log_error "PM2 is not installed"
