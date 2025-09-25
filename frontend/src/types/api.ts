@@ -1,6 +1,6 @@
 // Types communs pour l'API
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   data?: T;
   message?: string;
   error?: string;
@@ -10,14 +10,14 @@ export interface ApiResponse<T = any> {
 export interface ApiError {
   message: string;
   status: number;
-  details?: any;
+  details?: unknown;
 }
 
 export class ApiException extends Error {
   status: number;
-  details?: any;
+  details?: unknown;
 
-  constructor(message: string, status: number, details?: any) {
+  constructor(message: string, status: number, details?: unknown) {
     super(message);
     this.name = 'ApiException';
     this.status = status;

@@ -3,8 +3,7 @@
 'use client';
 
 import { useAuth } from '@/lib/hooks';
-import { LoadingSpinner, UserProfileCard, ErrorMessage, AuthGuard } from '@/components';
-import { config } from '@/lib/config';
+import { UserProfileCard, ErrorMessage, AuthGuard } from '@/components';
 
 export default function DashboardPage() {
   const { profile, isLoading, error, logout, clearError } = useAuth();

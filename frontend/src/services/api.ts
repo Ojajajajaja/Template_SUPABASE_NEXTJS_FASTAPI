@@ -51,7 +51,7 @@ export class ApiService {
   private async handleResponse<T>(response: Response): Promise<T> {
     const contentType = response.headers.get('content-type');
     
-    let data: any;
+    let data: Record<string, unknown>;
     if (contentType && contentType.includes('application/json')) {
       data = await response.json();
     } else {
@@ -59,14 +59,15 @@ export class ApiService {
     }
 
     if (!response.ok) {
+      const errorData = data as { detail?: string; message?: string };
       throw new ApiException(
-        data.detail || data.message || `HTTP error! status: ${response.status}`,
+        errorData.detail || errorData.message || `HTTP error! status: ${response.status}`,
         response.status,
         data
       );
     }
 
-    return data;
+    return data as T;
   }
 
   async get<T>(endpoint: string, params?: QueryParams): Promise<T> {
@@ -80,7 +81,7 @@ export class ApiService {
     return this.handleResponse<T>(response);
   }
 
-  async post<T>(endpoint: string, data?: any): Promise<T> {
+  async post<T>(endpoint: string, data?: unknown): Promise<T> {
     const url = this.buildUrl(endpoint);
     
     const response = await fetch(url, {
@@ -92,7 +93,7 @@ export class ApiService {
     return this.handleResponse<T>(response);
   }
 
-  async put<T>(endpoint: string, data?: any): Promise<T> {
+  async put<T>(endpoint: string, data?: unknown): Promise<T> {
     const url = this.buildUrl(endpoint);
     
     const response = await fetch(url, {

@@ -9,7 +9,9 @@ import {
   LoginCredentials, 
   SignupData, 
   ProfileUpdateData,
-  ApiException 
+  ApiException,
+  User,
+  UserProfile
 } from '@/types';
 
 // État initial
@@ -24,10 +26,10 @@ const initialState: AuthState = {
 // Actions du reducer
 type AuthAction =
   | { type: 'AUTH_START' }
-  | { type: 'AUTH_SUCCESS'; payload: { user?: any; profile?: any } }
+  | { type: 'AUTH_SUCCESS'; payload: { user?: User; profile?: UserProfile } }
   | { type: 'AUTH_FAILURE'; payload: string }
   | { type: 'LOGOUT' }
-  | { type: 'UPDATE_PROFILE'; payload: any }
+  | { type: 'UPDATE_PROFILE'; payload: UserProfile }
   | { type: 'CLEAR_ERROR' }
   | { type: 'SET_LOADING'; payload: boolean };
 

@@ -4,7 +4,7 @@ export interface User {
   id: string;
   email: string;
   created_at: string;
-  user_metadata?: Record<string, any>;
+  user_metadata?: Record<string, unknown>;
 }
 
 export interface UserProfile {
