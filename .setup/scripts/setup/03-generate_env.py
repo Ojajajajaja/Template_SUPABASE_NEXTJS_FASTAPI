@@ -190,57 +190,6 @@ def update_supabase_env(env_vars, jwt_secret, anon_key, service_role_key, secret
         f.write(content)
     print("Updated .env for supabase")
 
-def update_docker_compose_files(project_name):
-    """Update docker-compose.yml files with project name"""
-    # Replace spaces with hyphens in project name
-    project_name_slug = project_name.replace(' ', '-').lower()
-    
-    # Update main docker-compose.yml
-    with open('supabase/docker-compose.yml', 'r') as f:
-        content = f.read()
-    
-    # Update the name
-    content = re.sub(r'name:\s*\S+', f'name: supabase-{project_name_slug}', content)
-    
-    # Define services to update
-    services = [
-        'studio', 'kong', 'auth', 'rest', 'storage', 'imgproxy', 
-        'meta', 'edge-functions', 'analytics', 'db', 'vector', 'pooler'
-    ]
-    
-    # Update container names with regex pattern to catch any existing format
-    for service in services:
-        # Pattern to match: container_name: anything-{service} or container_name: {service}-anything
-        pattern = rf'container_name:\s*[^\n]*{service}[^\n]*'
-        replacement = f'container_name: supabase-{project_name_slug}-{service}'
-        content = re.sub(pattern, replacement, content)
-    
-    # Special case for realtime (has a dot in the name)
-    realtime_pattern = r'container_name:\s*[^\n]*realtime[^\n]*'
-    realtime_replacement = f'container_name: supabase-{project_name_slug}-realtime-dev.supabase-realtime'
-    content = re.sub(realtime_pattern, realtime_replacement, content)
-    
-    with open('supabase/docker-compose.yml', 'w') as f:
-        f.write(content)
-    print("Updated supabase/docker-compose.yml")
-    
-    # Update docker-compose.s3.yml if it exists
-    s3_file_path = 'supabase/docker-compose.s3.yml'
-    if os.path.exists(s3_file_path):
-        with open(s3_file_path, 'r') as f:
-            content_s3 = f.read()
-        
-        # Update container names in s3 file for storage and imgproxy
-        s3_services = ['storage', 'imgproxy']
-        for service in s3_services:
-            pattern = rf'container_name:\s*[^\n]*{service}[^\n]*'
-            replacement = f'container_name: supabase-{project_name_slug}-{service}'
-            content_s3 = re.sub(pattern, replacement, content_s3)
-        
-        with open(s3_file_path, 'w') as f:
-            f.write(content_s3)
-        print("Updated supabase/docker-compose.s3.yml")
-
 def update_env_config_with_keys(jwt_secret, anon_key, service_role_key, secret_key_base, vault_enc_key):
     """Update .env.config file with generated keys, replacing existing ones"""
     env_config_path = '.setup/.env.config'
@@ -296,10 +245,6 @@ def main():
     create_frontend_env(env_vars, jwt_secret, anon_key, service_role_key, deployment_mode)
     create_backend_env(env_vars, jwt_secret, anon_key, service_role_key, deployment_mode)
     update_supabase_env(env_vars, jwt_secret, anon_key, service_role_key, secret_key_base, vault_enc_key, deployment_mode)
-    
-    # Update docker-compose files
-    project_name = env_vars.get('PROJECT_NAME', 'TheSuperProject').strip('"')
-    update_docker_compose_files(project_name)
     
     # Update .env.config with generated keys
     update_env_config_with_keys(jwt_secret, anon_key, service_role_key, secret_key_base, vault_enc_key)

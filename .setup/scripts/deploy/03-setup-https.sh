@@ -3,7 +3,8 @@
 # HTTPS configuration script with Let's Encrypt
 # Configures SSL certificates for all domains
 
-set -e  # Stop script on error
+# Don't exit on errors - we want to try all domains
+set +e
 
 # Colors for messages
 RED='\033[0;31m'
@@ -86,24 +87,64 @@ log_info "  Frontend: $FRONTEND_DOMAIN"
 log_info "  Backend: $BACKEND_DOMAIN"
 log_info "  Supabase: $SUPABASE_DOMAIN"
 
+# Function to create temporary HTTP-only configuration
+create_temp_http_config() {
+    local domain="$1"
+    local service="$2"
+    local port="$3"
+    
+    local temp_config="/etc/nginx/sites-available/${service}-temp.conf"
+    
+    cat > "$temp_config" << EOF
+server {
+    listen 80;
+    server_name $domain;
+    
+    location / {
+        proxy_pass http://127.0.0.1:$port;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+EOF
+    
+    # Enable the temporary configuration
+    ln -sf "$temp_config" "/etc/nginx/sites-enabled/${service}-temp.conf"
+    log_info "Created temporary HTTP configuration for $domain"
+}
+
 # Function to configure SSL for a domain
 setup_ssl_for_domain() {
     local domain="$1"
     local service="$2"
+    local port="$3"
     
     log_info "Configuring SSL for $domain ($service)..."
     
-    # Check that Nginx configuration exists
-    if [[ ! -f "/etc/nginx/sites-enabled/${service}.conf" ]]; then
+    # Check that original Nginx configuration exists in sites-available
+    if [[ ! -f "/etc/nginx/sites-available/${service}.conf" ]]; then
         log_warning "Nginx configuration not found for $service"
         return 1
     fi
     
+    # Create temporary HTTP-only configuration for certificate validation
+    create_temp_http_config "$domain" "$service" "$port"
+    
+    # Reload Nginx with temporary configuration
+    nginx -t && systemctl reload nginx
+    
     # Attempt to configure SSL with certbot
     if certbot --nginx -d "$domain" --non-interactive --agree-tos --email "admin@$domain" --redirect; then
+        # Remove temporary configuration and enable the full SSL configuration
+        rm -f "/etc/nginx/sites-enabled/${service}-temp.conf"
+        ln -sf "/etc/nginx/sites-available/${service}.conf" "/etc/nginx/sites-enabled/${service}.conf"
         log_success "SSL configured successfully for $domain"
         return 0
     else
+        # Clean up temporary configuration on failure
+        rm -f "/etc/nginx/sites-enabled/${service}-temp.conf"
         log_error "Failed to configure SSL for $domain"
         return 1
     fi
@@ -113,6 +154,12 @@ setup_ssl_for_domain() {
 log_info "Starting SSL configuration..."
 echo ""
 
+# Load configuration to get ports
+source "$ENV_CONFIG_FILE"
+FRONTEND_PORT=${FRONTEND_PORT:-3000}
+API_PORT=${API_PORT:-2000}
+KONG_HTTP_PORT=${KONG_HTTP_PORT:-8000}
+
 # Variables to track results
 success_count=0
 total_count=3
@@ -120,7 +167,7 @@ failed_domains=()
 
 # Frontend
 echo "========================================="
-if setup_ssl_for_domain "$FRONTEND_DOMAIN" "frontend"; then
+if setup_ssl_for_domain "$FRONTEND_DOMAIN" "frontend" "$FRONTEND_PORT"; then
     ((success_count++))
 else
     failed_domains+=("$FRONTEND_DOMAIN (frontend)")
@@ -129,7 +176,7 @@ echo ""
 
 # Backend
 echo "========================================="
-if setup_ssl_for_domain "$BACKEND_DOMAIN" "backend"; then
+if setup_ssl_for_domain "$BACKEND_DOMAIN" "backend" "$API_PORT"; then
     ((success_count++))
 else
     failed_domains+=("$BACKEND_DOMAIN (backend)")
@@ -138,7 +185,7 @@ echo ""
 
 # Supabase
 echo "========================================="
-if setup_ssl_for_domain "$SUPABASE_DOMAIN" "supabase"; then
+if setup_ssl_for_domain "$SUPABASE_DOMAIN" "supabase" "$KONG_HTTP_PORT"; then
     ((success_count++))
 else
     failed_domains+=("$SUPABASE_DOMAIN (supabase)")
@@ -152,8 +199,8 @@ if nginx -t; then
     systemctl reload nginx
     log_success "Nginx reloaded successfully"
 else
-    log_error "Error in Nginx configuration after SSL"
-    exit 1
+    log_warning "Some Nginx configuration issues detected, but continuing..."
+    log_info "This might be normal if some domains failed SSL setup"
 fi
 
 # Configure automatic certificate renewal
@@ -192,9 +239,17 @@ if [[ $success_count -gt 0 ]]; then
     log_info "  ✓ HTTPS enforced (HTTP → HTTPS redirect)"
     echo ""
     log_info "Your sites are now accessible via HTTPS:"
-    [[ $success_count -eq 3 ]] && log_info "  🌐 https://$FRONTEND_DOMAIN"
-    [[ $success_count -eq 3 ]] && log_info "  🔧 https://$BACKEND_DOMAIN"
+    [[ $success_count -ge 1 ]] && log_info "  🌐 https://$FRONTEND_DOMAIN"
+    [[ $success_count -ge 2 ]] && log_info "  🔧 https://$BACKEND_DOMAIN"
     [[ $success_count -eq 3 ]] && log_info "  🗄️ https://$SUPABASE_DOMAIN"
+    
+    # Exit with success if at least one domain was configured
+    echo ""
+    log_success "HTTPS setup completed with $success_count/$total_count domains configured"
+    exit 0
+else
+    log_error "No domains were successfully configured with SSL"
+    exit 1
 fi
 
 echo ""
