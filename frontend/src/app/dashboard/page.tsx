@@ -2,9 +2,20 @@
 
 import { useEffect, useState } from 'react';
 
+// Interface pour le profil utilisateur
+interface UserProfile {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  phone: string;
+  role: string;
+  created_at: string;
+}
+
 export default function DashboardPage() {
-  const [user, setUser] = useState(null);
-  const [userProfile, setUserProfile] = useState(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,8 +29,9 @@ export default function DashboardPage() {
           return;
         }
 
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:2000';
-        const apiPrefix = process.env.NEXT_PUBLIC_API_PREFIX || '/api/v1';
+        // Configuration API
+        const apiUrl = 'http://localhost:2000';
+        const apiPrefix = '/api/v1';
         
         // Verify token with backend
         const response = await fetch(`${apiUrl}${apiPrefix}/user/me`, {
@@ -52,7 +64,7 @@ export default function DashboardPage() {
         }
 
         const userData = await response.json();
-        setUser(userData);
+        // Utilisateur authentifié avec succès
       } catch (error) {
         console.error('Authentication check failed', error);
         localStorage.removeItem('access_token');
