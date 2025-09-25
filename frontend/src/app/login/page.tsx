@@ -1,84 +1,103 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/hooks';
+import { LoadingSpinner, ErrorMessage } from '@/components';
+import { config } from '@/lib/config';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLogin, setIsLogin] = useState(true); // Toggle between login and register
+  const [isLogin, setIsLogin] = useState(true);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const { login, signup, isAuthenticated, isLoading, error, clearError } = useAuth();
+  const router = useRouter();
+
+  // Redirection si déjà authentifié
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, isLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    clearError();
+    setIsSubmitting(true);
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:2000';
-      const apiPrefix = process.env.NEXT_PUBLIC_API_PREFIX || '/api/v1';
-      
       if (isLogin) {
-        // Login logic
-        const response = await fetch(`${apiUrl}${apiPrefix}/auth/login`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email, password }),
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          // Handle successful login
-          console.log('Login successful', data);
-          // Store access token in localStorage
-          localStorage.setItem('access_token', data.access_token);
-          // Redirect to dashboard
-          window.location.href = '/dashboard';
-        } else {
-          // Handle login error
-          console.error('Login failed');
-        }
+        await login({ email, password });
+        router.push('/dashboard');
       } else {
-        // Register logic
-        const response = await fetch(`${apiUrl}${apiPrefix}/auth/signup`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            email, 
-            password,
-            first_name: firstName,
-            last_name: lastName,
-            phone
-          }),
+        await signup({
+          email,
+          password,
+          first_name: firstName,
+          last_name: lastName,
+          phone: phone || undefined,
         });
-        
-        if (response.ok) {
-          const data = await response.json();
-          // Handle successful registration
-          console.log('Registration successful', data);
-          // Optionally redirect to login after registration
-          setIsLogin(true);
-        } else {
-          // Handle registration error
-          console.error('Registration failed');
-        }
+        router.push('/dashboard');
       }
     } catch (error) {
-      console.error('An error occurred', error);
+      // L'erreur est déjà gérée par le contexte
+      console.error('Auth error:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  const resetForm = () => {
+    setEmail('');
+    setPassword('');
+    setFirstName('');
+    setLastName('');
+    setPhone('');
+    clearError();
+  };
+
+  const toggleMode = () => {
+    setIsLogin(!isLogin);
+    resetForm();
+  };
+
+  // Affichage du loading pendant la vérification d'auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <LoadingSpinner size="xl" text="Vérification..." />
+      </div>
+    );
+  }
+
+  // Ne pas afficher le formulaire si déjà authentifié
+  if (isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            {isLogin ? 'Sign in to your account' : 'Create a new account'}
+            {isLogin ? 'Connectez-vous à votre compte' : 'Créer un nouveau compte'}
           </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            {config.projectName}
+          </p>
         </div>
+        
+        {error && (
+          <ErrorMessage
+            message={error}
+            onDismiss={clearError}
+          />
+        )}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <input type="hidden" name="remember" value="true" />
           <div className="rounded-md shadow-sm -space-y-px">
@@ -167,18 +186,28 @@ export default function LoginPage() {
           <div>
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              disabled={isSubmitting}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLogin ? 'Sign in' : 'Sign up'}
+              {isSubmitting ? (
+                <div className="flex items-center">
+                  <LoadingSpinner size="sm" color="gray" className="mr-2" />
+                  {isLogin ? 'Connexion...' : 'Inscription...'}
+                </div>
+              ) : (
+                isLogin ? 'Se connecter' : 'S\'inscrire'
+              )}
             </button>
           </div>
         </form>
         <div className="text-center">
           <button
-            onClick={() => setIsLogin(!isLogin)}
+            type="button"
+            onClick={toggleMode}
             className="font-medium text-indigo-600 hover:text-indigo-500"
+            disabled={isSubmitting}
           >
-            {isLogin ? 'Need an account? Register' : 'Already have an account? Sign in'}
+            {isLogin ? 'Besoin d\'un compte ? S\'inscrire' : 'Déjà un compte ? Se connecter'}
           </button>
         </div>
       </div>
