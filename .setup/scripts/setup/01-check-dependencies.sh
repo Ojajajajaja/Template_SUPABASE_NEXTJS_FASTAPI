@@ -89,6 +89,42 @@ if [ "$DEPLOYMENT_MODE" = "production" ]; then
         ((ERROR_COUNT++))
     fi
     echo ""
+    
+    echo "=== Checking Nginx (Production mode) ==="
+    if command -v nginx &> /dev/null; then
+        echo "✅ Nginx is installed"
+        nginx -v
+    else
+        echo "❌ Nginx is not installed"
+        echo "Nginx is required for production deployment"
+        echo "Please run: make install-deps"
+        ((ERROR_COUNT++))
+    fi
+    echo ""
+    
+    echo "=== Checking Certbot (Production mode) ==="
+    if command -v certbot &> /dev/null; then
+        echo "✅ Certbot is installed"
+        certbot --version
+    else
+        echo "❌ Certbot is not installed"
+        echo "Certbot is required for SSL certificates in production"
+        echo "Please run: make install-deps"
+        ((ERROR_COUNT++))
+    fi
+    echo ""
+    
+    echo "=== Checking Python 3 (Production mode) ==="
+    if command -v python3 &> /dev/null; then
+        echo "✅ Python 3 is installed"
+        python3 --version
+    else
+        echo "❌ Python 3 is not installed"
+        echo "Python 3 is required for production deployment"
+        echo "Please run: make install-deps"
+        ((ERROR_COUNT++))
+    fi
+    echo ""
 fi
 
 echo "Dependency check completed."

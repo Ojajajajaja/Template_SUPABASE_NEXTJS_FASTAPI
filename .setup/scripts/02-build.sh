@@ -40,6 +40,21 @@ fi
 # Change to project root
 cd "$PROJECT_ROOT"
 
+# Check if running as root (not recommended for build operations)
+if [[ $EUID -eq 0 ]]; then
+    echo "Warning: Running build script as root is not recommended!"
+    echo "For production environments, please use a dedicated user account."
+    echo "If you need to create a production user, run:"
+    echo "  sudo ./.setup/scripts/00-setup-user.sh"
+    echo ""
+    read -p "Do you want to continue anyway? (y/N): " CONTINUE
+    if [[ "$CONTINUE" != "y" && "$CONTINUE" != "Y" ]]; then
+        echo "Build cancelled."
+        exit 1
+    fi
+    echo ""
+fi
+
 echo "========================================"
 echo "     PROJECT BUILD SCRIPT"
 echo "========================================"

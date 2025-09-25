@@ -91,6 +91,18 @@ if [ -z "$DEPLOYMENT_MODE" ]; then
             ;;
     esac
 fi
+
+# Check if running as root in production mode
+if [[ "$DEPLOYMENT_MODE" == "production" && $EUID -eq 0 ]]; then
+    echo "Error: Cannot run setup script as root in production mode!"
+    echo "Please switch to your production user and run the script again."
+    echo "If you haven't created a production user yet, run:"
+    echo "  sudo ./.setup/scripts/00-setup-user.sh"
+    echo "Then switch to that user with:"
+    echo "  su - <your_production_user>"
+    exit 1
+fi
+
 echo ""
 
 # 1) Check dependencies

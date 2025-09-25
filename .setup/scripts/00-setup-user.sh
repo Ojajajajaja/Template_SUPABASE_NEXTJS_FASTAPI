@@ -29,17 +29,6 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Function to run commands with automatic sudo password
-run_sudo() {
-    if [[ $EUID -eq 0 ]]; then
-        # Already running as root, execute directly
-        "$@"
-    else
-        # Use sudo with password
-        echo "$PROD_PASSWORD" | sudo -S "$@" 2>/dev/null
-    fi
-}
-
 # Determine project root directory
 # This script can be called from different locations, so we need to find the actual project root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -265,9 +254,9 @@ echo "  make deploy          - Deploy with Nginx/HTTPS"
 echo "  make prod            - Full production workflow"
 echo ""
 echo "Or use individual scripts:"
-echo "  ./.setup/scripts/01-setup.sh   - Project setup"
-echo "  ./.setup/scripts/02-build.sh   - Build and PM2"
-echo "  ./.setup/scripts/03-deploy.sh  - Nginx deployment"
+echo "  ./.setup/scripts/01-setup.sh prod   - Project setup (production)"
+echo "  ./.setup/scripts/02-build.sh         - Build and PM2"
+echo "  ./.setup/scripts/03-deploy.sh        - Nginx deployment"
 echo ""
 EOF
 
@@ -295,67 +284,18 @@ log_info "  ✓ Project: $NEW_PROJECT_PATH"
 log_info "  ✓ Groups: sudo, docker (if available)"
 log_info "  ✓ Permissions: configured"
 echo ""
+log_warning "IMPORTANT: Please switch to the production user to continue!"
+echo ""
 log_info "To switch to the production user:"
 log_info "  su - $PROD_USERNAME"
 echo ""
-log_info "The user will automatically be in the project directory"
-log_info "and have access to all project scripts."
+log_info "Once logged in as $PROD_USERNAME, continue with:"
+log_info "  ./.setup/scripts/01-setup.sh prod    # Project setup"
+log_info "  ./.setup/scripts/02-build.sh        # Build and start with PM2"
+log_info "  ./.setup/scripts/03-deploy.sh       # Deploy with Nginx/HTTPS"
 echo ""
-
-# Initialize sudo session for the production user to avoid password prompts
-log_info "Initializing sudo session for user $PROD_USERNAME..."
-if sudo -u "$PROD_USERNAME" sudo -n true 2>/dev/null; then
-    log_success "Sudo session already active for $PROD_USERNAME"
-else
-    log_info "Activating sudo session for $PROD_USERNAME..."
-    # Use the production user password to initialize sudo session (silent)
-    if echo "$PROD_PASSWORD" | sudo -u "$PROD_USERNAME" -S sudo -v 2>/dev/null; then
-        log_success "Sudo session initialized for $PROD_USERNAME"
-    else
-        # Try alternative method with timeout
-        if timeout 10 bash -c "echo '$PROD_PASSWORD' | sudo -u '$PROD_USERNAME' -S sudo -v" 2>/dev/null; then
-            log_success "Sudo session initialized for $PROD_USERNAME"
-        else
-            log_warning "Could not initialize sudo session automatically. User may need to enter password later."
-        fi
-    fi
-fi
-
-# If project was moved, automatically switch to the new location
-if [[ "$MOVE_NEEDED" == "true" ]]; then
-    echo ""
-    log_info "=== Project has been relocated ==="
-    log_info "Project moved to: $NEW_PROJECT_PATH"
-    log_info "Automatically switching to the new location..."
-    echo ""
-    
-    # Verify the new directory exists and is accessible
-    if [[ ! -d "$NEW_PROJECT_PATH" ]]; then
-        log_error "New project directory does not exist: $NEW_PROJECT_PATH"
-        exit 1
-    fi
-    
-    # Change to the new project directory
-    if cd "$NEW_PROJECT_PATH"; then
-        log_success "Successfully switched to relocated project directory"
-        log_info "Current directory: $(pwd)"
-    else
-        log_error "Failed to change to new project directory"
-        exit 1
-    fi
-    
-    log_info "Sudo session is initialized - no password required for next steps!"
-    echo ""
-    log_info "You can now continue with:"
-    log_info "  make build    # Build and start with PM2"
-    log_info "  make deploy   # Deploy with Nginx/HTTPS"
-    log_info "  make build && make deploy   # Or both together"
-    echo ""
-    
-    # Start a new shell in the correct directory to maintain the working directory
-    log_info "Starting new shell session in the project directory..."
-    exec $SHELL
-else
-    log_info "Project was not moved. You can continue with the workflow normally."
-    log_success "Sudo session is initialized for $PROD_USERNAME - no password required!"
-fi
+log_info "Or use the make shortcuts:"
+log_info "  make setup    # Project setup"
+log_info "  make build    # Build and PM2"
+log_info "  make deploy   # Nginx deployment"
+echo ""

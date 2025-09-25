@@ -70,7 +70,7 @@ dev: setup-dev
 	@echo "  make supabase-start      - Start Supabase services"
 
 # Production workflow (with dependencies check)
-prod: setup-prod setup-user build deploy
+prod: setup-prod build deploy
 	@echo "✓ Production deployment completed!"
 	@echo ""
 	@echo "Your applications are now running in production mode."

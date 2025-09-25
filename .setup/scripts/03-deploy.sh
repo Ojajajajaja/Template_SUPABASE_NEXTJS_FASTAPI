@@ -40,6 +40,18 @@ fi
 # Change to project root
 cd "$PROJECT_ROOT"
 
+# Check if running as root (deployment requires sudo but should be run by production user)
+if [[ $EUID -eq 0 ]]; then
+    echo "Error: Deploy script should not be run as root!"
+    echo "Please switch to your production user and run the script again."
+    echo "The script will automatically request sudo privileges when needed."
+    echo "If you haven't created a production user yet, run:"
+    echo "  sudo ./.setup/scripts/00-setup-user.sh"
+    echo "Then switch to that user with:"
+    echo "  su - <your_production_user>"
+    exit 1
+fi
+
 echo "========================================"
 echo "    PROJECT DEPLOYMENT SCRIPT"
 echo "========================================"
