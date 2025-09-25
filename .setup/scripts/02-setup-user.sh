@@ -29,14 +29,60 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Function to run commands with automatic sudo password
+run_sudo() {
+    if [[ $EUID -eq 0 ]]; then
+        # Already running as root, execute directly
+        "$@"
+    else
+        # Use sudo with password
+        echo "$PROD_PASSWORD" | sudo -S "$@" 2>/dev/null
+    fi
+}
+
 # Determine project root directory
+# This script can be called from different locations, so we need to find the actual project root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../" && pwd)"
+
+# Check if we're in the .setup/scripts directory structure
+if [[ "$SCRIPT_DIR" == *"/.setup/scripts"* ]]; then
+    # Standard case: script is in PROJECT/.setup/scripts/
+    PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../" && pwd)"
+else
+    # Fallback: search for .setup directory from current working directory
+    CURRENT_DIR="$(pwd)"
+    PROJECT_ROOT="$CURRENT_DIR"
+    
+    # Search upward for .setup directory
+    while [[ "$PROJECT_ROOT" != "/" ]]; do
+        if [[ -d "$PROJECT_ROOT/.setup" ]]; then
+            break
+        fi
+        PROJECT_ROOT="$(dirname "$PROJECT_ROOT")"
+    done
+    
+    # If not found, check if .setup exists in current directory
+    if [[ ! -d "$PROJECT_ROOT/.setup" ]]; then
+        # Last resort: use current working directory if it contains .setup
+        if [[ -d "$CURRENT_DIR/.setup" ]]; then
+            PROJECT_ROOT="$CURRENT_DIR"
+        else
+            log_error "Cannot find .setup directory. Please run this script from the project root or ensure .setup directory exists."
+            log_info "Current directory: $CURRENT_DIR"
+            log_info "Script location: $SCRIPT_DIR"
+            exit 1
+        fi
+    fi
+fi
+
 SETUP_DIR="$PROJECT_ROOT/.setup"
 ENV_CONFIG_FILE="$SETUP_DIR/.env.config"
 
 log_info "=== Production User Setup Process ==="
+log_info "Script location: $SCRIPT_DIR"
 log_info "Project directory: $PROJECT_ROOT"
+log_info "Setup directory: $SETUP_DIR"
+log_info "Config file: $ENV_CONFIG_FILE"
 
 # Check root permissions
 if [[ $EUID -ne 0 ]]; then
@@ -261,72 +307,54 @@ log_info "Initializing sudo session for user $PROD_USERNAME..."
 if sudo -u "$PROD_USERNAME" sudo -n true 2>/dev/null; then
     log_success "Sudo session already active for $PROD_USERNAME"
 else
-    log_info "Activating sudo session for $PROD_USERNAME (password required once)..."
-    # Use the production user password to initialize sudo session
-    echo "$PROD_PASSWORD" | sudo -u "$PROD_USERNAME" -S sudo -v
-    if [[ $? -eq 0 ]]; then
+    log_info "Activating sudo session for $PROD_USERNAME..."
+    # Use the production user password to initialize sudo session (silent)
+    if echo "$PROD_PASSWORD" | sudo -u "$PROD_USERNAME" -S sudo -v 2>/dev/null; then
         log_success "Sudo session initialized for $PROD_USERNAME"
     else
-        log_warning "Could not initialize sudo session. User may need to enter password later."
+        # Try alternative method with timeout
+        if timeout 10 bash -c "echo '$PROD_PASSWORD' | sudo -u '$PROD_USERNAME' -S sudo -v" 2>/dev/null; then
+            log_success "Sudo session initialized for $PROD_USERNAME"
+        else
+            log_warning "Could not initialize sudo session automatically. User may need to enter password later."
+        fi
     fi
 fi
 
-# If project was moved, provide guidance for continuing the workflow
+# If project was moved, automatically switch to the new location
 if [[ "$MOVE_NEEDED" == "true" ]]; then
     echo ""
-    log_info "=== IMPORTANT: Project has been relocated ==="
-    log_warning "The project has been moved to: $NEW_PROJECT_PATH"
-    log_warning "You need to continue the workflow from the new location."
+    log_info "=== Project has been relocated ==="
+    log_info "Project moved to: $NEW_PROJECT_PATH"
+    log_info "Automatically switching to the new location..."
     echo ""
     
-    # Ask user how they want to continue
-    log_info "How would you like to continue?"
-    echo "1) Switch to production user and continue automatically"
-    echo "2) Continue as current user from new location"
-    echo "3) Exit and continue manually later"
-    echo ""
-    read -p "Your choice (1, 2, or 3): " continue_choice
+    # Verify the new directory exists and is accessible
+    if [[ ! -d "$NEW_PROJECT_PATH" ]]; then
+        log_error "New project directory does not exist: $NEW_PROJECT_PATH"
+        exit 1
+    fi
     
-    case $continue_choice in
-        1)
-            log_info "Switching to production user $PROD_USERNAME..."
-            log_info "You will be automatically in the project directory"
-            log_info "Sudo session is already initialized - no password required!"
-            echo ""
-            # Execute the continuation script
-            exec "$NEW_PROJECT_PATH/.setup/scripts/continue-after-move.sh" "$NEW_PROJECT_PATH" "$PROD_USERNAME"
-            ;;
-        2)
-            log_info "Continuing as current user..."
-            log_warning "Changing to new project directory: $NEW_PROJECT_PATH"
-            cd "$NEW_PROJECT_PATH"
-            echo ""
-            log_success "You are now in the relocated project directory."
-            log_info "Continue with: make build && make deploy"
-            echo ""
-            # Start a new shell in the correct directory
-            exec $SHELL
-            ;;
-        3)
-            log_info "Manual continuation instructions:"
-            echo ""
-            log_info "Option A - Switch to production user:"
-            log_info "  su - $PROD_USERNAME"
-            log_info "  # You'll be automatically in the project directory"
-            log_info "  # Sudo session is initialized - no password required!"
-            log_info "  make build && make deploy"
-            echo ""
-            log_info "Option B - Continue as current user:"
-            log_info "  cd $NEW_PROJECT_PATH"
-            log_info "  make build && make deploy"
-            echo ""
-            ;;
-        *)
-            log_warning "Invalid choice. Please continue manually:"
-            log_info "  cd $NEW_PROJECT_PATH"
-            log_info "  make build && make deploy"
-            ;;
-    esac
+    # Change to the new project directory
+    if cd "$NEW_PROJECT_PATH"; then
+        log_success "Successfully switched to relocated project directory"
+        log_info "Current directory: $(pwd)"
+    else
+        log_error "Failed to change to new project directory"
+        exit 1
+    fi
+    
+    log_info "Sudo session is initialized - no password required for next steps!"
+    echo ""
+    log_info "You can now continue with:"
+    log_info "  make build    # Build and start with PM2"
+    log_info "  make deploy   # Deploy with Nginx/HTTPS"
+    log_info "  make build && make deploy   # Or both together"
+    echo ""
+    
+    # Start a new shell in the correct directory to maintain the working directory
+    log_info "Starting new shell session in the project directory..."
+    exec $SHELL
 else
     log_info "Project was not moved. You can continue with the workflow normally."
     log_success "Sudo session is initialized for $PROD_USERNAME - no password required!"

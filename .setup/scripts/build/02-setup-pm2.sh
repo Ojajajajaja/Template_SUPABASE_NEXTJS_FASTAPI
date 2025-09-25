@@ -29,9 +29,37 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Determine project root directory
+# Determine project root directory robustly
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../" && pwd)"
+
+# Check if we're in the .setup/scripts/build directory structure
+if [[ "$SCRIPT_DIR" == *"/.setup/scripts/build"* ]]; then
+    # Standard case: script is in PROJECT/.setup/scripts/build/
+    PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../" && pwd)"
+else
+    # Fallback: search for .setup directory from current working directory
+    CURRENT_DIR="$(pwd)"
+    PROJECT_ROOT="$CURRENT_DIR"
+    
+    # Search upward for .setup directory
+    while [[ "$PROJECT_ROOT" != "/" ]]; do
+        if [[ -d "$PROJECT_ROOT/.setup" ]]; then
+            break
+        fi
+        PROJECT_ROOT="$(dirname "$PROJECT_ROOT")"
+    done
+    
+    # If not found, use current working directory if it contains .setup
+    if [[ ! -d "$PROJECT_ROOT/.setup" ]]; then
+        if [[ -d "$CURRENT_DIR/.setup" ]]; then
+            PROJECT_ROOT="$CURRENT_DIR"
+        else
+            echo "Error: Cannot find .setup directory. Please run from project root."
+            exit 1
+        fi
+    fi
+fi
+
 FRONTEND_DIR="$PROJECT_ROOT/frontend"
 BACKEND_DIR="$PROJECT_ROOT/backend"
 SETUP_DIR="$PROJECT_ROOT/.setup"
@@ -76,7 +104,12 @@ log_info "  Backend: $BACKEND_DOMAIN:$API_PORT"
 # Create PM2 ecosystem configuration
 log_info "Creating PM2 ecosystem configuration..."
 
-cat > "$PROJECT_ROOT/ecosystem.config.js" << EOF
+# Ensure we remove any existing configuration first
+rm -f "$PROJECT_ROOT/ecosystem.config.js" 2>/dev/null || true
+
+# Create our custom ecosystem configuration
+log_info "Generating ecosystem.config.js with custom configuration..."
+cat > "$PROJECT_ROOT/ecosystem.config.js" << 'EOF'
 module.exports = {
   apps: [
     {
@@ -86,7 +119,7 @@ module.exports = {
       args: 'start',
       env: {
         NODE_ENV: 'production',
-        PORT: $FRONTEND_PORT
+        PORT: process.env.FRONTEND_PORT || 3000
       },
       instances: 1,
       autorestart: true,
@@ -104,7 +137,7 @@ module.exports = {
       args: 'main.py',
       env: {
         PYTHONPATH: './backend',
-        API_PORT: $API_PORT
+        API_PORT: process.env.API_PORT || 2000
       },
       instances: 1,
       autorestart: true,
@@ -115,20 +148,7 @@ module.exports = {
       log_file: './logs/backend-combined.log',
       time: true
     }
-  ],
-
-  deploy: {
-    production: {
-      user: 'node',
-      host: '$BACKEND_DOMAIN',
-      ref: 'origin/main',
-      repo: 'git@github.com:repo.git',
-      path: '/var/www/production',
-      'pre-deploy-local': '',
-      'post-deploy': 'npm install && pm2 reload ecosystem.config.js --env production',
-      'pre-setup': ''
-    }
-  }
+  ]
 };
 EOF
 
@@ -139,39 +159,23 @@ log_info "Creating logs directory..."
 mkdir -p "$PROJECT_ROOT/logs"
 log_success "Logs directory created"
 
-# Check if frontend build exists
-if [[ ! -d "$FRONTEND_DIR/.next" ]]; then
-    log_warning "Frontend build not found. Please run the build script first."
-fi
-
 # Check if backend main.py exists
 if [[ ! -f "$BACKEND_DIR/main.py" ]]; then
     log_error "Backend main.py not found in $BACKEND_DIR"
     exit 1
 fi
 
-# Stop any existing PM2 processes
+# Stop any existing PM2 processes and clear configuration
 log_info "Stopping any existing PM2 processes..."
 pm2 delete all 2>/dev/null || true
-log_info "Existing processes stopped"
+pm2 kill 2>/dev/null || true
 
-# Validate ecosystem configuration
-log_info "Validating PM2 ecosystem configuration..."
-if pm2 ecosystem "$PROJECT_ROOT/ecosystem.config.js" &>/dev/null; then
-    log_success "PM2 ecosystem configuration is valid"
-else
-    log_error "PM2 ecosystem configuration validation failed"
-    exit 1
-fi
+log_info "Starting with clean PM2 state"
 
 log_success "=== PM2 setup completed successfully ==="
 echo ""
-log_info "PM2 configuration created:"
+log_info "PM2 configuration ready:"
 log_info "  ✓ ecosystem.config.js - PM2 configuration file"
 log_info "  ✓ logs/ - Directory for application logs"
-echo ""
-log_info "Applications configured:"
-log_info "  ✓ frontend - Next.js application (port $FRONTEND_PORT)"
-log_info "  ✓ backend - FastAPI application (port $API_PORT)"
 echo ""
 log_info "Ready to start applications with PM2!"

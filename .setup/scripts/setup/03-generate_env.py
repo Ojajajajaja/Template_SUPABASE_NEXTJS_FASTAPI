@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import secrets
 import base64
@@ -83,12 +84,18 @@ def generate_encryption_keys():
     vault_enc_key = hashlib.sha256(key).hexdigest()
     return secret_key_base, vault_enc_key
 
-def create_frontend_env(env_vars, jwt_secret, anon_key, service_role_key):
+def create_frontend_env(env_vars, jwt_secret, anon_key, service_role_key, deployment_mode='development'):
     """Create the frontend .env.local file"""
+    
+    if deployment_mode == 'production':
+        api_url = f"https://{env_vars.get('BACKEND_DOMAIN', 'api.example.com')}"
+    else:
+        api_url = f"http://localhost:{env_vars.get('API_PORT', '8000')}"
+    
     content = f"""# Frontend environment variables
 
 NEXT_PUBLIC_API_PREFIX={env_vars.get('API_PREFIX', '/api/v1')}
-NEXT_PUBLIC_API_URL=http://localhost:{env_vars.get('API_PORT', '8000')}
+NEXT_PUBLIC_API_URL={api_url}
 NEXT_FRONTEND_PORT={env_vars.get('FRONTEND_PORT', '3000')}
 NEXT_PUBLIC_PROJECT_NAME={env_vars.get('PROJECT_NAME', 'TheSuperProject').strip('"')}
 """
@@ -98,24 +105,32 @@ NEXT_PUBLIC_PROJECT_NAME={env_vars.get('PROJECT_NAME', 'TheSuperProject').strip(
         f.write(content)
     print("Created .env.local for frontend")
 
-def create_backend_env(env_vars, jwt_secret, anon_key, service_role_key):
+def create_backend_env(env_vars, jwt_secret, anon_key, service_role_key, deployment_mode='development'):
     """Create the backend .env file"""
+    
+    if deployment_mode == 'production':
+        supabase_url = f"https://{env_vars.get('SUPABASE_DOMAIN', 'supabase.example.com')}"
+        cors_origins = f"https://{env_vars.get('FRONTEND_DOMAIN', 'example.com')}"
+    else:
+        supabase_url = f"http://localhost:{env_vars.get('KONG_HTTP_PORT', '8000')}"
+        cors_origins = f"http://localhost:{env_vars.get('FRONTEND_PORT', '3000')}"
+    
     content = f"""# Backend environment variables
 
 PROJECT_NAME={env_vars.get('PROJECT_NAME', 'TheSuperProject').strip('"')}
-SUPABASE_URL=http://localhost:{env_vars.get('KONG_HTTP_PORT', '8000')}
+SUPABASE_URL={supabase_url}
 SUPABASE_ANON_KEY={anon_key}
 SUPABASE_SERVICE_KEY={service_role_key}
 API_PREFIX={env_vars.get('API_PREFIX', '/api/v1')}
 API_PORT={env_vars.get('API_PORT', '8000')}
-CORS_ORIGINS=http://localhost:{env_vars.get('FRONTEND_PORT', '3000')}
+CORS_ORIGINS={cors_origins}
 """
     
     with open('backend/.env', 'w') as f:
         f.write(content)
     print("Created .env for backend")
 
-def update_supabase_env(env_vars, jwt_secret, anon_key, service_role_key, secret_key_base, vault_enc_key):
+def update_supabase_env(env_vars, jwt_secret, anon_key, service_role_key, secret_key_base, vault_enc_key, deployment_mode='development'):
     """Update the supabase .env file with the required variables"""
     supabase_env_path = 'supabase/.env'
     
@@ -146,6 +161,30 @@ def update_supabase_env(env_vars, jwt_secret, anon_key, service_role_key, secret
     # Email configuration
     content = re.sub(r'ENABLE_EMAIL_AUTOCONFIRM=.*', f'ENABLE_EMAIL_AUTOCONFIRM={env_vars.get("ENABLE_EMAIL_AUTOCONFIRM", "false")}', content)
     
+    # Production or development URLs
+    if deployment_mode == 'production':
+        supabase_domain = env_vars.get('SUPABASE_DOMAIN', 'supabase.example.com')
+        frontend_domain = env_vars.get('FRONTEND_DOMAIN', 'example.com')
+        
+        api_external_url = f"https://{supabase_domain}"
+        supabase_public_url = f"https://{supabase_domain}"
+        site_url = f"https://{frontend_domain}"
+        additional_redirect_urls = f"https://{frontend_domain}/callback"
+    else:
+        kong_port = env_vars.get('KONG_HTTP_PORT', '8000')
+        frontend_port = env_vars.get('FRONTEND_PORT', '3000')
+        
+        api_external_url = f"http://localhost:{kong_port}"
+        supabase_public_url = f"http://localhost:{kong_port}"
+        site_url = f"http://localhost:{frontend_port}"
+        additional_redirect_urls = f"http://localhost:{frontend_port}/callback"
+    
+    # Update URLs
+    content = re.sub(r'API_EXTERNAL_URL=.*', f'API_EXTERNAL_URL={api_external_url}', content)
+    content = re.sub(r'SUPABASE_PUBLIC_URL=.*', f'SUPABASE_PUBLIC_URL={supabase_public_url}', content)
+    content = re.sub(r'SITE_URL=.*', f'SITE_URL={site_url}', content)
+    content = re.sub(r'ADDITIONAL_REDIRECT_URLS=.*', f'ADDITIONAL_REDIRECT_URLS={additional_redirect_urls}', content)
+    
     # Write the updated content back to the file
     with open(supabase_env_path, 'w') as f:
         f.write(content)
@@ -161,37 +200,25 @@ def update_docker_compose_files(project_name):
         content = f.read()
     
     # Update the name
-    content = re.sub(r'name:\s*supabase', f'name: {project_name_slug}', content)
+    content = re.sub(r'name:\s*\S+', f'name: supabase-{project_name_slug}', content)
     
-    # Update container names - put "supabase" first, then service, then project name
-    # Format: supabase-{service}-{projectname}
-    # We need to replace the current container names which are in the format "{project_name}-{service}"
-    content = content.replace('container_name: thesuperproject-studio', 
-                             f'container_name: supabase-studio-{project_name_slug}')
-    content = content.replace('container_name: thesuperproject-kong', 
-                             f'container_name: supabase-kong-{project_name_slug}')
-    content = content.replace('container_name: thesuperproject-auth', 
-                             f'container_name: supabase-auth-{project_name_slug}')
-    content = content.replace('container_name: thesuperproject-rest', 
-                             f'container_name: supabase-rest-{project_name_slug}')
-    content = content.replace('container_name: thesuperproject-storage', 
-                             f'container_name: supabase-storage-{project_name_slug}')
-    content = content.replace('container_name: thesuperproject-imgproxy', 
-                             f'container_name: supabase-imgproxy-{project_name_slug}')
-    content = content.replace('container_name: thesuperproject-meta', 
-                             f'container_name: supabase-meta-{project_name_slug}')
-    content = content.replace('container_name: thesuperproject-edge-functions', 
-                             f'container_name: supabase-edge-functions-{project_name_slug}')
-    content = content.replace('container_name: thesuperproject-analytics', 
-                             f'container_name: supabase-analytics-{project_name_slug}')
-    content = content.replace('container_name: thesuperproject-db', 
-                             f'container_name: supabase-db-{project_name_slug}')
-    content = content.replace('container_name: thesuperproject-vector', 
-                             f'container_name: supabase-vector-{project_name_slug}')
-    content = content.replace('container_name: thesuperproject-pooler', 
-                             f'container_name: supabase-pooler-{project_name_slug}')
-    content = content.replace('container_name: thesuperproject-realtime-dev.supabase-realtime', 
-                             f'container_name: supabase-realtime-dev-{project_name_slug}.supabase-realtime')
+    # Define services to update
+    services = [
+        'studio', 'kong', 'auth', 'rest', 'storage', 'imgproxy', 
+        'meta', 'edge-functions', 'analytics', 'db', 'vector', 'pooler'
+    ]
+    
+    # Update container names with regex pattern to catch any existing format
+    for service in services:
+        # Pattern to match: container_name: anything-{service} or container_name: {service}-anything
+        pattern = rf'container_name:\s*[^\n]*{service}[^\n]*'
+        replacement = f'container_name: supabase-{project_name_slug}-{service}'
+        content = re.sub(pattern, replacement, content)
+    
+    # Special case for realtime (has a dot in the name)
+    realtime_pattern = r'container_name:\s*[^\n]*realtime[^\n]*'
+    realtime_replacement = f'container_name: supabase-{project_name_slug}-realtime-dev.supabase-realtime'
+    content = re.sub(realtime_pattern, realtime_replacement, content)
     
     with open('supabase/docker-compose.yml', 'w') as f:
         f.write(content)
@@ -203,12 +230,12 @@ def update_docker_compose_files(project_name):
         with open(s3_file_path, 'r') as f:
             content_s3 = f.read()
         
-        # Update container names in s3 file
-        # Format: supabase-{service}-{projectname}
-        content_s3 = content_s3.replace('container_name: thesuperproject-storage', 
-                                       f'container_name: supabase-storage-{project_name_slug}')
-        content_s3 = content_s3.replace('container_name: thesuperproject-imgproxy', 
-                                       f'container_name: supabase-imgproxy-{project_name_slug}')
+        # Update container names in s3 file for storage and imgproxy
+        s3_services = ['storage', 'imgproxy']
+        for service in s3_services:
+            pattern = rf'container_name:\s*[^\n]*{service}[^\n]*'
+            replacement = f'container_name: supabase-{project_name_slug}-{service}'
+            content_s3 = re.sub(pattern, replacement, content_s3)
         
         with open(s3_file_path, 'w') as f:
             f.write(content_s3)
@@ -250,6 +277,13 @@ def update_env_config_with_keys(jwt_secret, anon_key, service_role_key, secret_k
     print("Updated .env.config with generated keys")
 
 def main():
+    # Get deployment mode from command line arguments
+    deployment_mode = 'development'  # Default
+    if len(sys.argv) > 1:
+        deployment_mode = sys.argv[1]
+    
+    print(f"Deployment mode: {deployment_mode}")
+    
     # Read .env.config
     env_vars = read_env_config('.setup/.env.config')
     
@@ -259,9 +293,9 @@ def main():
     secret_key_base, vault_enc_key = generate_encryption_keys()
     
     # Create environment files
-    create_frontend_env(env_vars, jwt_secret, anon_key, service_role_key)
-    create_backend_env(env_vars, jwt_secret, anon_key, service_role_key)
-    update_supabase_env(env_vars, jwt_secret, anon_key, service_role_key, secret_key_base, vault_enc_key)
+    create_frontend_env(env_vars, jwt_secret, anon_key, service_role_key, deployment_mode)
+    create_backend_env(env_vars, jwt_secret, anon_key, service_role_key, deployment_mode)
+    update_supabase_env(env_vars, jwt_secret, anon_key, service_role_key, secret_key_base, vault_enc_key, deployment_mode)
     
     # Update docker-compose files
     project_name = env_vars.get('PROJECT_NAME', 'TheSuperProject').strip('"')
@@ -270,7 +304,13 @@ def main():
     # Update .env.config with generated keys
     update_env_config_with_keys(jwt_secret, anon_key, service_role_key, secret_key_base, vault_enc_key)
     
-    print("All environment files created successfully!")
+    if deployment_mode == 'production':
+        print("Environment files created successfully for PRODUCTION!")
+        print(f"Frontend URL: https://{env_vars.get('FRONTEND_DOMAIN', 'example.com')}")
+        print(f"Backend URL: https://{env_vars.get('BACKEND_DOMAIN', 'api.example.com')}")
+        print(f"Supabase URL: https://{env_vars.get('SUPABASE_DOMAIN', 'supabase.example.com')}")
+    else:
+        print("Environment files created successfully for DEVELOPMENT!")
 
 if __name__ == "__main__":
     main()

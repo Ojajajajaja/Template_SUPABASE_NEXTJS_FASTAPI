@@ -2,10 +2,19 @@
 
 # Script to check required project dependencies
 # Checks for uv, docker compose and npm
+# In production mode, also checks for PM2
 
-echo "Checking required dependencies..."
-echo "If any dependency is missing, please run: make install-deps"
-echo "Or directly: ./.setup/scripts/install-dependencies.sh"
+# Get deployment mode from environment variable or argument
+DEPLOYMENT_MODE="${DEPLOYMENT_MODE:-development}"
+if [ $# -eq 1 ]; then
+    DEPLOYMENT_MODE="$1"
+fi
+
+echo "Checking required dependencies for $DEPLOYMENT_MODE mode..."
+if [ "$DEPLOYMENT_MODE" = "production" ]; then
+    echo "If any dependency is missing, please run: make install-deps"
+    echo "Or directly: ./.setup/scripts/install-dependencies.sh"
+fi
 echo ""
 
 # Initialize error count
@@ -18,7 +27,9 @@ if command -v uv &> /dev/null; then
     uv --version
 else
     echo "❌ uv is not installed"
-    echo "Please run: make install-deps"
+    if [ "$DEPLOYMENT_MODE" = "production" ]; then
+        echo "Please run: make install-deps"
+    fi
     ((ERROR_COUNT++))
 fi
 
@@ -35,12 +46,16 @@ if command -v docker &> /dev/null; then
         docker compose version
     else
         echo "❌ Docker Compose is not available"
-        echo "Please run: make install-deps"
+        if [ "$DEPLOYMENT_MODE" = "production" ]; then
+            echo "Please run: make install-deps"
+        fi
         ((ERROR_COUNT++))
     fi
 else
     echo "❌ Docker is not installed"
-    echo "Please run: make install-deps"
+    if [ "$DEPLOYMENT_MODE" = "production" ]; then
+        echo "Please run: make install-deps"
+    fi
     ((ERROR_COUNT++))
 fi
 
@@ -53,19 +68,39 @@ if command -v npm &> /dev/null; then
     npm --version
 else
     echo "❌ npm is not installed"
-    echo "Please run: make install-deps"
+    if [ "$DEPLOYMENT_MODE" = "production" ]; then
+        echo "Please run: make install-deps"
+    fi
     ((ERROR_COUNT++))
 fi
 
 echo ""
+
+# Check PM2 for production mode only
+if [ "$DEPLOYMENT_MODE" = "production" ]; then
+    echo "=== Checking PM2 (Production mode) ==="
+    if command -v pm2 &> /dev/null; then
+        echo "✅ PM2 is installed"
+        pm2 --version
+    else
+        echo "❌ PM2 is not installed"
+        echo "PM2 is required for production deployment"
+        echo "Please run: make install-deps"
+        ((ERROR_COUNT++))
+    fi
+    echo ""
+fi
+
 echo "Dependency check completed."
 
 # Exit with error if any dependency is missing
 if [ $ERROR_COUNT -gt 0 ]; then
     echo ""
     echo "❌ $ERROR_COUNT dependencies are missing!"
-    echo "Please run: make install-deps"
-    echo "Or directly: ./.setup/scripts/install-dependencies.sh"
+    if [ "$DEPLOYMENT_MODE" = "production" ]; then
+        echo "Please run: make install-deps"
+        echo "Or directly: ./.setup/scripts/install-dependencies.sh"
+    fi
     exit 1
 else
     echo "✅ All required dependencies are installed!"

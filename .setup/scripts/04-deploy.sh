@@ -5,16 +5,37 @@
 
 set -e  # Stop script if a command fails
 
-# Determine project root directory (go up two levels from .setup/scripts/)
-# Handle both direct execution and symbolic links
-if [[ -L "${BASH_SOURCE[0]}" ]]; then
-    # If called via symbolic link, resolve the actual script location
-    SCRIPT_DIR="$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}")")" && pwd)"
+# Determine project root directory robustly
+# This script can be called from different locations
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Check if we're in the .setup/scripts directory structure
+if [[ "$SCRIPT_DIR" == *"/.setup/scripts"* ]]; then
+    # Standard case: script is in PROJECT/.setup/scripts/
+    PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../" && pwd)"
 else
-    # If called directly
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    # Fallback: search for .setup directory from current working directory
+    CURRENT_DIR="$(pwd)"
+    PROJECT_ROOT="$CURRENT_DIR"
+    
+    # Search upward for .setup directory
+    while [[ "$PROJECT_ROOT" != "/" ]]; do
+        if [[ -d "$PROJECT_ROOT/.setup" ]]; then
+            break
+        fi
+        PROJECT_ROOT="$(dirname "$PROJECT_ROOT")"
+    done
+    
+    # If not found, use current working directory if it contains .setup
+    if [[ ! -d "$PROJECT_ROOT/.setup" ]]; then
+        if [[ -d "$CURRENT_DIR/.setup" ]]; then
+            PROJECT_ROOT="$CURRENT_DIR"
+        else
+            echo "Error: Cannot find .setup directory. Please run from project root."
+            exit 1
+        fi
+    fi
 fi
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../" && pwd)"
 
 # Change to project root
 cd "$PROJECT_ROOT"

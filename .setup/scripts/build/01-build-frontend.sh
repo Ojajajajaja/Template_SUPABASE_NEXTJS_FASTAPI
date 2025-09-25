@@ -29,9 +29,37 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Determine project root directory
+# Determine project root directory robustly
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../" && pwd)"
+
+# Check if we're in the .setup/scripts/build directory structure
+if [[ "$SCRIPT_DIR" == *"/.setup/scripts/build"* ]]; then
+    # Standard case: script is in PROJECT/.setup/scripts/build/
+    PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../" && pwd)"
+else
+    # Fallback: search for .setup directory from current working directory
+    CURRENT_DIR="$(pwd)"
+    PROJECT_ROOT="$CURRENT_DIR"
+    
+    # Search upward for .setup directory
+    while [[ "$PROJECT_ROOT" != "/" ]]; do
+        if [[ -d "$PROJECT_ROOT/.setup" ]]; then
+            break
+        fi
+        PROJECT_ROOT="$(dirname "$PROJECT_ROOT")"
+    done
+    
+    # If not found, use current working directory if it contains .setup
+    if [[ ! -d "$PROJECT_ROOT/.setup" ]]; then
+        if [[ -d "$CURRENT_DIR/.setup" ]]; then
+            PROJECT_ROOT="$CURRENT_DIR"
+        else
+            echo "Error: Cannot find .setup directory. Please run from project root."
+            exit 1
+        fi
+    fi
+fi
+
 FRONTEND_DIR="$PROJECT_ROOT/frontend"
 
 log_info "=== Frontend Build Process ==="
@@ -51,6 +79,7 @@ if [[ ! -f "$FRONTEND_DIR/package.json" ]]; then
 fi
 
 # Navigate to frontend directory
+log_info "Navigating to frontend directory..."
 cd "$FRONTEND_DIR"
 
 # Check if node_modules exists, if not install dependencies
@@ -63,7 +92,7 @@ else
 fi
 
 # Check if build script exists in package.json
-if ! npm run --silent 2>/dev/null | grep -q "build"; then
+if ! npm run 2>/dev/null | grep -q "build"; then
     log_error "Build script not found in package.json"
     log_info "Please ensure your package.json has a 'build' script"
     exit 1
@@ -71,7 +100,6 @@ fi
 
 # Build the frontend
 log_info "Building frontend application..."
-log_info "Running: npm run build"
 
 if npm run build; then
     log_success "Frontend build completed successfully"
@@ -80,28 +108,4 @@ else
     exit 1
 fi
 
-# Check if build output exists
-if [[ -d ".next" ]]; then
-    log_success "Build output directory '.next' created"
-    
-    # Display build size information
-    if command -v du &> /dev/null; then
-        build_size=$(du -sh .next 2>/dev/null | cut -f1)
-        log_info "Build size: $build_size"
-    fi
-else
-    log_warning "Build output directory '.next' not found"
-fi
-
-# Check for static files
-if [[ -d ".next/static" ]]; then
-    static_files=$(find .next/static -type f | wc -l)
-    log_info "Static files generated: $static_files files"
-fi
-
 log_success "=== Frontend build process completed ==="
-echo ""
-log_info "Next steps:"
-log_info "- Frontend is ready for production deployment"
-log_info "- You can start the production server with 'npm start'"
-log_info "- Or use PM2 for process management"
