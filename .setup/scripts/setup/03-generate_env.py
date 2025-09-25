@@ -234,20 +234,30 @@ def update_supabase_docker_compose(project_name):
         print(f"Warning: {docker_compose_path} not found, skipping docker-compose update")
         return
     
-    # Replace spaces with hyphens in project name
-    project_name_slug = project_name.replace(' ', '-').lower()
-    
-    # Read the docker-compose.yml file
-    with open(docker_compose_path, 'r') as f:
-        content = f.read()
-    
-    # Update the project name: replace "name: supabase" with "name: supabase-PROJECT_NAME"
-    content = re.sub(r'name:\s*supabase\s*$', f'name: supabase-{project_name_slug}', content, flags=re.MULTILINE)
-    
-    # Write the updated content back to the file
-    with open(docker_compose_path, 'w') as f:
-        f.write(content)
-    print(f"Updated {docker_compose_path} project name to: supabase-{project_name_slug}")
+    try:
+        # Replace spaces with hyphens in project name
+        project_name_slug = project_name.replace(' ', '-').lower()
+        
+        # Read the docker-compose.yml file
+        with open(docker_compose_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # First: Replace all occurrences of "supabase-" with "supabase-PROJECT_NAME-"
+        content = content.replace('supabase-', f'supabase-{project_name_slug}-')
+        
+        # Second: Update the project name: replace "name: supabase" with "name: supabase-PROJECT_NAME"
+        content = re.sub(r'name:\s*supabase\s*$', f'name: supabase-{project_name_slug}', content, flags=re.MULTILINE)
+        
+        # Write the updated content back to the file
+        with open(docker_compose_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        
+        print(f"Updated {docker_compose_path} project name to: supabase-{project_name_slug}")
+        print(f"Updated all container names: supabase-* -> supabase-{project_name_slug}-*")
+        
+    except Exception as e:
+        print(f"Error updating docker-compose.yml: {e}")
+        print("Continuing without docker-compose update...")
 
 def main():
     # Get deployment mode from command line arguments
