@@ -98,17 +98,11 @@ echo "1) Checking dependencies..."
 echo "----------------------------------------"
 ./.setup/scripts/setup/01-check-dependencies.sh "$DEPLOYMENT_MODE"
 echo ""
-read -p "Press Enter to continue..."
-
-echo ""
 
 # 2) Initialize Supabase
 echo "2) Initializing Supabase..."
 echo "----------------------------------------"
 ./.setup/scripts/setup/02-init-supabase.sh
-echo ""
-read -p "Press Enter to continue..."
-
 echo ""
 
 # 3) Generate environment files
@@ -116,9 +110,6 @@ echo "3) Generating environment files..."
 echo "----------------------------------------"
 echo "Running environment generation script..."
 uv run ./.setup/scripts/setup/03-generate_env.py "$DEPLOYMENT_MODE"
-echo ""
-read -p "Press Enter to continue..."
-
 echo ""
 
 # 4) Build project

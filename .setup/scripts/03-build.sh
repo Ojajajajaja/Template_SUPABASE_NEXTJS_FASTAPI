@@ -51,26 +51,17 @@ echo "1) Building frontend application..."
 echo "----------------------------------------"
 ./.setup/scripts/build/01-build-frontend.sh
 echo ""
-read -p "Press Enter to continue..."
-
-echo ""
 
 # 2) Setup PM2
 echo "2) Setting up PM2 process manager..."
 echo "----------------------------------------"
 ./.setup/scripts/build/02-setup-pm2.sh
 echo ""
-read -p "Press Enter to continue..."
-
-echo ""
 
 # 3) Start services
 echo "3) Starting all services..."
 echo "----------------------------------------"
 ./.setup/scripts/build/03-start-services.sh
-echo ""
-read -p "Press Enter to continue..."
-
 echo ""
 
 echo "========================================"
