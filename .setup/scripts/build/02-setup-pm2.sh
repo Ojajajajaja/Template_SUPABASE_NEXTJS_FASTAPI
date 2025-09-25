@@ -71,7 +71,7 @@ log_info "Project directory: $PROJECT_ROOT"
 # Check if PM2 is installed globally
 if ! command -v pm2 &> /dev/null; then
     log_error "PM2 is not installed"
-    log_info "Please run 'make install-deps' or './.setup/scripts/install-dependencies.sh' first"
+    log_info "Please run 'make install-deps' or './.setup/scripts/00-install-dependencies.sh' first"
     exit 1
 else
     log_info "PM2 is already installed"

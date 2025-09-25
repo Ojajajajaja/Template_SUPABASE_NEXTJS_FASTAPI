@@ -87,7 +87,7 @@ log_info "Config file: $ENV_CONFIG_FILE"
 # Check root permissions
 if [[ $EUID -ne 0 ]]; then
    log_error "This script must be run with sudo"
-   log_info "Usage: sudo ./.setup/scripts/02-setup-user.sh"
+   log_info "Usage: sudo ./.setup/scripts/00-setup-user.sh"
    exit 1
 fi
 
@@ -266,8 +266,8 @@ echo "  make prod            - Full production workflow"
 echo ""
 echo "Or use individual scripts:"
 echo "  ./.setup/scripts/01-setup.sh   - Project setup"
-echo "  ./.setup/scripts/03-build.sh   - Build and PM2"
-echo "  ./.setup/scripts/04-deploy.sh  - Nginx deployment"
+echo "  ./.setup/scripts/02-build.sh   - Build and PM2"
+echo "  ./.setup/scripts/03-deploy.sh  - Nginx deployment"
 echo ""
 EOF
 

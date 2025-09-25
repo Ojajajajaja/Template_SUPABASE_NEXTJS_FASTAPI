@@ -55,7 +55,7 @@ fi
 # Check if Nginx is installed
 if ! command -v nginx &> /dev/null; then
     log_error "Nginx is not installed"
-    log_info "Please run 'make install-deps' or './.setup/scripts/install-dependencies.sh' first"
+    log_info "Please run 'make install-deps' or './.setup/scripts/00-install-dependencies.sh' first"
     exit 1
 else
     log_info "Nginx is already installed"
@@ -64,7 +64,7 @@ fi
 # Check if Certbot is installed
 if ! command -v certbot &> /dev/null; then
     log_error "Certbot is not installed"
-    log_info "Please run 'make install-deps' or './.setup/scripts/install-dependencies.sh' first"
+    log_info "Please run 'make install-deps' or './.setup/scripts/00-install-dependencies.sh' first"
     exit 1
 else
     log_info "Certbot is already installed"

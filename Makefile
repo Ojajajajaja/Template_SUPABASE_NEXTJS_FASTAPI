@@ -58,7 +58,7 @@ help:
 # Dependencies installation
 install-deps:
 	@echo "📦 Installing system dependencies..."
-	@./.setup/scripts/install-dependencies.sh
+	@./.setup/scripts/00-install-dependencies.sh
 
 # Development workflow
 dev: setup-dev
@@ -70,31 +70,10 @@ dev: setup-dev
 	@echo "  make supabase-start      - Start Supabase services"
 
 # Production workflow (with dependencies check)
-prod: check-deps setup-prod setup-user build deploy
+prod: setup-prod setup-user build deploy
 	@echo "✓ Production deployment completed!"
 	@echo ""
 	@echo "Your applications are now running in production mode."
-
-# Check if dependencies are installed
-check-deps:
-	@echo "🔍 Checking system dependencies..."
-	@if ! command -v uv >/dev/null 2>&1; then \
-		echo "❌ UV not found. Please run 'make install-deps' first."; \
-		exit 1; \
-	fi
-	@if ! command -v nginx >/dev/null 2>&1; then \
-		echo "❌ Nginx not found. Please run 'make install-deps' first."; \
-		exit 1; \
-	fi
-	@if ! command -v docker >/dev/null 2>&1; then \
-		echo "❌ Docker not found. Please run 'make install-deps' first."; \
-		exit 1; \
-	fi
-	@if ! command -v pm2 >/dev/null 2>&1; then \
-		echo "❌ PM2 not found. Please run 'make install-deps' first."; \
-		exit 1; \
-	fi
-	@echo "✓ All dependencies are installed"
 
 # Individual setup scripts
 setup:
@@ -111,15 +90,15 @@ setup-prod:
 
 setup-user:
 	@echo "👥 Setting up production user..."
-	@./.setup/scripts/02-setup-user.sh
+	@./.setup/scripts/00-setup-user.sh
 
 build:
 	@echo "🏗️  Running build process..."
-	@./.setup/scripts/03-build.sh
+	@./.setup/scripts/02-build.sh
 
 deploy:
 	@echo "🚀 Running deployment process..."
-	@./.setup/scripts/04-deploy.sh
+	@./.setup/scripts/03-deploy.sh
 
 # Frontend management - Development
 frontend-start-dev:
