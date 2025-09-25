@@ -1,7 +1,7 @@
 # Makefile for Template SUPABASE NEXTJS FASTAPI
 # Provides convenient commands for development and production
 
-.PHONY: help dev prod install-deps check-deps-status setup build deploy frontend-start-dev frontend-stop-dev frontend-start-prod frontend-stop-prod backend-start-dev backend-stop-dev backend-start-prod backend-stop-prod supabase-start supabase-stop supabase-restart clean
+.PHONY: help dev prod install-deps setup setup-dev setup-prod build deploy frontend-start-dev frontend-stop-dev frontend-start-prod frontend-stop-prod backend-start-dev backend-stop-dev backend-start-prod backend-stop-prod supabase-start supabase-stop supabase-restart clean
 
 # Default target
 help:
@@ -13,13 +13,13 @@ help:
 	@echo ""
 	@echo "Dependencies & Setup:"
 	@echo "  make install-deps    - Install all system dependencies (run FIRST)"
-	@echo "  make check-deps-status - Check which dependencies are installed"
-	@echo "  make setup           - Run initial project setup"
+	@echo "  make setup-dev       - Run initial project setup development mode"
+	@echo "  make setup-prod      - Run initial project setup production mode"
 	@echo ""
 	@echo "Development:"
 	@echo "  make dev             - Setup project for development"
 	@echo ""
-	@echo "⚠️  IMPORTANT: Run 'make install-deps' before any other commands"
+	@echo "⚠️  IMPORTANT: Run 'make install-deps' before any other commands in production"
 	@echo ""
 	@echo "Production:"
 	@echo "  make prod            - Full production deployment (setup + user + build + deploy)"
@@ -58,14 +58,10 @@ help:
 # Dependencies installation
 install-deps:
 	@echo "📦 Installing system dependencies..."
-	@./.setup/scripts/install-dependencies.sh
-
-# Check dependencies status
-check-deps-status:
-	@./.setup/scripts/check-dependencies.sh
+	@./.setup/scripts/00-install-dependencies.sh
 
 # Development workflow
-dev: setup
+dev: setup-dev
 	@echo "✓ Development environment ready!"
 	@echo ""
 	@echo "Next steps:"
@@ -74,48 +70,35 @@ dev: setup
 	@echo "  make supabase-start      - Start Supabase services"
 
 # Production workflow (with dependencies check)
-prod: check-deps setup setup-user build deploy
+prod: setup-prod setup-user build deploy
 	@echo "✓ Production deployment completed!"
 	@echo ""
 	@echo "Your applications are now running in production mode."
-
-# Check if dependencies are installed
-check-deps:
-	@echo "🔍 Checking system dependencies..."
-	@if ! command -v uv >/dev/null 2>&1; then \
-		echo "❌ UV not found. Please run 'make install-deps' first."; \
-		exit 1; \
-	fi
-	@if ! command -v nginx >/dev/null 2>&1; then \
-		echo "❌ Nginx not found. Please run 'make install-deps' first."; \
-		exit 1; \
-	fi
-	@if ! command -v docker >/dev/null 2>&1; then \
-		echo "❌ Docker not found. Please run 'make install-deps' first."; \
-		exit 1; \
-	fi
-	@if ! command -v pm2 >/dev/null 2>&1; then \
-		echo "❌ PM2 not found. Please run 'make install-deps' first."; \
-		exit 1; \
-	fi
-	@echo "✓ All dependencies are installed"
 
 # Individual setup scripts
 setup:
 	@echo "🔧 Running project setup..."
 	@./.setup/scripts/01-setup.sh
 
+setup-dev:
+	@echo "🔧 Running project setup..."
+	@./.setup/scripts/01-setup.sh dev
+
+setup-prod:
+	@echo "🔧 Running project setup..."
+	@./.setup/scripts/01-setup.sh prod
+
 setup-user:
 	@echo "👥 Setting up production user..."
-	@./.setup/scripts/02-setup-user.sh
+	@./.setup/scripts/00-setup-user.sh
 
 build:
 	@echo "🏗️  Running build process..."
-	@./.setup/scripts/03-build.sh
+	@./.setup/scripts/02-build.sh
 
 deploy:
 	@echo "🚀 Running deployment process..."
-	@./.setup/scripts/04-deploy.sh
+	@./.setup/scripts/03-deploy.sh
 
 # Frontend management - Development
 frontend-start-dev:
