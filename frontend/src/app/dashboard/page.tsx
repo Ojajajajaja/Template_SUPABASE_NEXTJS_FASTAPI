@@ -1,57 +1,61 @@
 'use client';
 
-'use client';
-
+import Image from 'next/image';
 import { useAuth } from '@/lib/hooks';
 import { UserProfileCard, ErrorMessage, AuthGuard } from '@/components';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ModeToggle } from '@/components/mode-toggle';
+import { UserMenu } from '@/components/navigation/UserMenu';
+import { User } from 'lucide-react';
 
 export default function DashboardPage() {
-  const { profile, isLoading, error, logout, clearError } = useAuth();
-
-  const handleLogout = () => {
-    logout();
-  };
+  const { profile, isLoading, error, clearError } = useAuth();
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-gray-50">
-        <nav className="bg-white shadow">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-16">
-              <div className="flex">
-                <div className="flex-shrink-0 flex items-center">
-                  <h1 className="text-xl font-bold">Dashboard</h1>
-                </div>
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Image 
+                  src="/placeholder_logo.svg" 
+                  alt="Oja Template Logo" 
+                  width={32} 
+                  height={32}
+                  className="w-8 h-8"
+                />
+                <span className="text-xl font-semibold">Oja Template</span>
               </div>
-              <div className="flex items-center">
-                <button
-                  onClick={handleLogout}
-                  className="ml-4 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  Logout
-                </button>
+              <div className="flex items-center space-x-4">
+                <ModeToggle />
+                <UserMenu />
               </div>
             </div>
           </div>
-        </nav>
+        </header>
 
-        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-          <div className="px-4 py-6 sm:px-0">
-            <div className="border-4 border-dashed border-gray-200 rounded-lg min-h-96 p-4">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">Bienvenue sur votre Dashboard</h2>
-              <p className="text-gray-600 mb-6">
-                Cette page est protégée et accessible uniquement lorsque vous êtes connecté.
-              </p>
-              
-              {error && (
-                <ErrorMessage 
-                  message={error} 
-                  onDismiss={clearError} 
-                  className="mb-6" 
-                />
-              )}
-              
-              <div className="mt-6">
+        {/* Main Content */}
+        <main className="container mx-auto px-4 py-8">
+          {error && (
+            <ErrorMessage 
+              message={error} 
+              onDismiss={clearError} 
+              className="mb-6" 
+            />
+          )}
+
+          {/* User Profile Section */}
+          <div className="max-w-8xl mx-auto">
+            <Card>
+              <CardHeader>
+                <CardTitle>User Profile</CardTitle>
+                <CardDescription>
+                  Your account information and settings
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
                 {profile && (
                   <UserProfileCard 
                     profile={profile} 
@@ -60,12 +64,13 @@ export default function DashboardPage() {
                   />
                 )}
                 {!profile && !isLoading && (
-                  <div className="bg-white py-4 px-6 shadow rounded">
-                    <p className="text-gray-600">Aucune information de profil disponible.</p>
+                  <div className="text-center py-8 text-muted-foreground">
+                    <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No profile information available.</p>
                   </div>
                 )}
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
         </main>
       </div>

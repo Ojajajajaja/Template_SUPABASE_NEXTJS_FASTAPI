@@ -2,9 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/lib/hooks';
-import { LoadingSpinner, ErrorMessage } from '@/components';
-import { config } from '@/lib/config';
+import { ErrorMessage } from '@/components';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Loader } from '@/components/ui/loader';
+import { ModeToggle } from '@/components/mode-toggle';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -18,7 +25,7 @@ export default function LoginPage() {
   const { login, signup, isAuthenticated, isLoading, error, clearError } = useAuth();
   const router = useRouter();
 
-  // Redirection si déjà authentifié
+  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
       router.push('/dashboard');
@@ -45,7 +52,7 @@ export default function LoginPage() {
         router.push('/dashboard');
       }
     } catch (error) {
-      // L'erreur est déjà gérée par le contexte
+      // Error is already handled by context
       console.error('Auth error:', error);
     } finally {
       setIsSubmitting(false);
@@ -66,149 +73,202 @@ export default function LoginPage() {
     resetForm();
   };
 
-  // Affichage du loading pendant la vérification d'auth
+  // Loading display during auth verification
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <LoadingSpinner size="xl" text="Vérification..." />
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader size="lg" />
       </div>
     );
   }
 
-  // Ne pas afficher le formulaire si déjà authentifié
+  // Don't show form if already authenticated
   if (isAuthenticated) {
     return null;
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            {isLogin ? 'Connectez-vous à votre compte' : 'Créer un nouveau compte'}
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            {config.projectName}
-          </p>
-        </div>
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      {/* Left section - Hero */}
+      <div className="flex-1 bg-gradient-to-br from-primary via-primary/90 to-primary/80 flex items-center justify-center p-8 relative overflow-hidden">
+        {/* Background pattern */}
+        <div className="absolute inset-0 bg-grid-white/10 bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_at_center,black_50%,transparent_100%)]" />
         
-        {error && (
-          <ErrorMessage
-            message={error}
-            onDismiss={clearError}
-          />
-        )}
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <input type="hidden" name="remember" value="true" />
-          <div className="rounded-md shadow-sm -space-y-px">
-            {!isLogin && (
-              <>
-                <div>
-                  <label htmlFor="first-name" className="sr-only">
-                    First Name
-                  </label>
-                  <input
-                    id="first-name"
-                    name="first-name"
-                    type="text"
-                    required={!isLogin}
-                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                    placeholder="First Name"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="last-name" className="sr-only">
-                    Last Name
-                  </label>
-                  <input
-                    id="last-name"
-                    name="last-name"
-                    type="text"
-                    required={!isLogin}
-                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                    placeholder="Last Name"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="phone" className="sr-only">
-                    Phone
-                  </label>
-                  <input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                    placeholder="Phone (optional)"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                  />
-                </div>
-              </>
-            )}
-            <div>
-              <label htmlFor="email-address" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="email-address"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+        <div className="relative z-10 text-center text-primary-foreground max-w-md">
+          <div className="mb-8">
+            <div className="w-16 h-16 bg-primary-foreground/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Image 
+                src="/placeholder_logo.svg" 
+                alt="Oja Template Logo" 
+                width={32} 
+                height={32}
+                className="w-8 h-8 invert"
               />
             </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+            <h1 className="text-4xl font-bold mb-4">Oja Template</h1>
+            <p className="text-primary-foreground/80 text-lg leading-relaxed">
+              Join the template and discover a modern solution designed to accelerate your development.
+            </p>
+          </div>
+          
+          {/* Features */}
+          <div className="space-y-4 text-left">
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-primary-foreground rounded-full"></div>
+              <span className="text-sm">Secure authentication</span>
             </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-primary-foreground rounded-full"></div>
+              <span className="text-sm">Modern interface with Shadcn/UI</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-primary-foreground rounded-full"></div>
+              <span className="text-sm">Modular and extensible architecture</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right section - Form */}
+      <div className="flex-1 flex items-center justify-center p-8 bg-background">
+        <div className="w-full max-w-md space-y-6">
+          {/* Header with navigation */}
+          <div className="flex justify-between items-center mb-8">
+            <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              ← Back to home
+            </Link>
+            <ModeToggle />
           </div>
 
-          <div>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? (
-                <div className="flex items-center">
-                  <LoadingSpinner size="sm" color="gray" className="mr-2" />
-                  {isLogin ? 'Connexion...' : 'Inscription...'}
-                </div>
-              ) : (
-                isLogin ? 'Se connecter' : 'S\'inscrire'
+          <Card>
+            <CardHeader className="space-y-1 text-center">
+              <CardTitle className="text-2xl">
+                {isLogin ? "Sign In" : "Create Account"}
+              </CardTitle>
+              <CardDescription>
+                {isLogin 
+                  ? "Enter your credentials to access your account"
+                  : "Create your account to get started"
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {error && (
+                <ErrorMessage
+                  message={error}
+                  onDismiss={clearError}
+                  className="mb-6"
+                />
               )}
-            </button>
-          </div>
-        </form>
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={toggleMode}
-            className="font-medium text-indigo-600 hover:text-indigo-500"
-            disabled={isSubmitting}
-          >
-            {isLogin ? 'Besoin d\'un compte ? S\'inscrire' : 'Déjà un compte ? Se connecter'}
-          </button>
+              
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {!isLogin && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName">First Name</Label>
+                      <Input
+                        id="firstName"
+                        type="text"
+                        placeholder="John"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        required={!isLogin}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">Last Name</Label>
+                      <Input
+                        id="lastName"
+                        type="text"
+                        placeholder="Doe"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        required={!isLogin}
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                {!isLogin && (
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone (optional)</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="+1 234 567 8900"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                    />
+                  </div>
+                )}
+                
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="john@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting && (
+                    <Loader size="sm" className="mr-2" />
+                  )}
+                  {isSubmitting
+                    ? (isLogin ? "Signing in..." : "Creating account...")
+                    : (isLogin ? "Sign In" : "Create Account")
+                  }
+                </Button>
+              </form>
+              
+              <div className="mt-6 text-center">
+                <Button
+                  variant="link"
+                  onClick={toggleMode}
+                  disabled={isSubmitting}
+                  className="text-sm"
+                >
+                  {isLogin
+                    ? "Don't have an account? Sign up"
+                    : "Already have an account? Sign in"
+                  }
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Footer */}
+          <p className="text-center text-xs text-muted-foreground">
+            By continuing, you agree to our{' '}
+            <Link href="#" className="underline underline-offset-4 hover:text-foreground">
+              terms of service
+            </Link>{' '}
+            and{' '}
+            <Link href="#" className="underline underline-offset-4 hover:text-foreground">
+              privacy policy
+            </Link>
+            .
+          </p>
         </div>
       </div>
     </div>

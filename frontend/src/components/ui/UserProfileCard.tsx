@@ -1,64 +1,58 @@
-// Composant de carte de profil utilisateur réutilisable
+// Reusable user profile card component
 import { UserProfile, ComponentProps } from '@/types';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface UserProfileCardProps extends ComponentProps {
   profile: UserProfile;
   isLoading?: boolean;
   showEditButton?: boolean;
-  onEdit?: () => void;
 }
 
 export const UserProfileCard: React.FC<UserProfileCardProps> = ({
   profile,
   isLoading = false,
   showEditButton = false,
-  onEdit,
   className = '',
 }) => {
   if (isLoading) {
     return (
-      <div className={`bg-white py-4 px-6 shadow rounded ${className}`}>
-        <div className="animate-pulse">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <Card className={className}>
+        <CardContent className="pt-6">
+          <div className="flex justify-between items-start mb-4">
+            <Skeleton className="h-6 w-32" />
+            {showEditButton && <Skeleton className="h-8 w-16" />}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[...Array(6)].map((_, i) => (
-              <div key={i}>
-                <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
-                <div className="h-5 bg-gray-300 rounded w-2/3"></div>
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-5 w-32" />
               </div>
             ))}
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className={`bg-white py-4 px-6 shadow rounded ${className}`}>
-      <div className="flex justify-between items-start mb-4">
-        <h3 className="text-lg font-medium text-gray-900">Profil Utilisateur</h3>
-        {showEditButton && onEdit && (
-          <button
-            onClick={onEdit}
-            className="text-sm text-indigo-600 hover:text-indigo-900 font-medium"
-          >
-            Modifier
-          </button>
-        )}
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <ProfileField label="Prénom" value={profile.first_name} />
-        <ProfileField label="Nom" value={profile.last_name} />
-        <ProfileField label="Nom complet" value={profile.full_name} />
-        <ProfileField label="Email" value={profile.email} />
-        <ProfileField label="Téléphone" value={profile.phone} />
-        <ProfileField 
-          label="Rôle" 
-          value={profile.role} 
-          className="capitalize" 
-        />
-      </div>
-    </div>
+    <Card className={className}>
+      <CardContent className="pt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <ProfileField label="First Name" value={profile.first_name} />
+          <ProfileField label="Last Name" value={profile.last_name} />
+          <ProfileField label="Full Name" value={profile.full_name} />
+          <ProfileField label="Email" value={profile.email} />
+          <ProfileField label="Phone" value={profile.phone} />
+          <ProfileField 
+            label="Role" 
+            value={profile.role} 
+            className="capitalize" 
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
@@ -73,9 +67,9 @@ const ProfileField: React.FC<ProfileFieldProps> = ({
   value, 
   className = '' 
 }) => (
-  <div>
-    <p className="text-sm font-medium text-gray-500">{label}</p>
-    <p className={`text-gray-900 ${className}`}>{value || 'N/A'}</p>
+  <div className="space-y-1">
+    <p className="text-sm font-medium text-muted-foreground">{label}</p>
+    <p className={`text-foreground ${className}`}>{value || 'N/A'}</p>
   </div>
 );
 

@@ -1,10 +1,10 @@
-// Composant de protection des routes authentifiées
+// Authentication route protection component
 'use client';
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks';
-import { LoadingSpinner } from '@/components/ui';
+import { Loader } from '@/components/ui/loader';
 import { ComponentProps } from '@/types';
 
 interface AuthGuardProps extends ComponentProps {
@@ -26,23 +26,23 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
     }
   }, [isAuthenticated, isLoading, router, redirectTo]);
 
-  // Affichage du chargement
+  // Loading display
   if (isLoading) {
     return (
       fallback || (
         <div className="min-h-screen flex items-center justify-center">
-          <LoadingSpinner size="xl" text="Vérification de l'authentification..." />
+          <Loader size="lg" />
         </div>
       )
     );
   }
 
-  // Si non authentifié, ne rien afficher (redirection en cours)
+  // If not authenticated, display nothing (redirect in progress)
   if (!isAuthenticated) {
     return null;
   }
 
-  // Si authentifié, afficher le contenu
+  // If authenticated, display content
   return <>{children}</>;
 };
 
