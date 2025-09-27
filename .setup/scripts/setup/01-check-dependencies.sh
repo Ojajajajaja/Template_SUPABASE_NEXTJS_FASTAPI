@@ -20,6 +20,19 @@ echo ""
 # Initialize error count
 ERROR_COUNT=0
 
+# Check if .env.config exists in .setup directory
+echo "=== Checking .env.config file ==="
+if [ -f "./.setup/.env.config" ]; then
+    echo "✅ .env.config file exists in .setup directory"
+else
+    echo "❌ .env.config file is missing in .setup directory"
+    echo "Please create .env.config file in .setup directory"
+    echo "You can copy from .env.config.example: cp ./.setup/.env.config.example ./.setup/.env.config"
+    ((ERROR_COUNT++))
+fi
+
+echo ""
+
 # Check uv
 echo "=== Checking uv ==="
 if command -v uv &> /dev/null; then
