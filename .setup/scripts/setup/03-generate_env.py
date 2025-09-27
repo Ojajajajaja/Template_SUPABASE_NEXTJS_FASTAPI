@@ -31,6 +31,32 @@ def generate_jwt_token(payload, secret):
     # Return complete token
     return f"{header_encoded}.{payload_encoded}.{signature_encoded}"
 
+def apply_port_range(env_vars):
+    """Apply SUPABASE_PORT_RANGE if defined, updating port variables in sequence"""
+    port_range = env_vars.get('SUPABASE_PORT_RANGE', '').strip()
+    
+    if port_range and port_range.isdigit() and len(port_range) == 4:
+        base_port = int(port_range)
+        print(f"Applying SUPABASE_PORT_RANGE: {base_port}")
+        
+        # Set ports in sequence: KONG_HTTP, KONG_HTTPS, POSTGRES, POOLER, STUDIO, ANALYTICS
+        env_vars['KONG_HTTP_PORT'] = str(base_port)
+        env_vars['KONG_HTTPS_PORT'] = str(base_port + 1)
+        env_vars['POSTGRES_PORT'] = str(base_port + 2)
+        env_vars['POOLER_PROXY_PORT_TRANSACTION'] = str(base_port + 3)
+        env_vars['STUDIO_PORT'] = str(base_port + 4)
+        env_vars['ANALYTICS_HOST_PORT'] = str(base_port + 5)
+        
+        print(f"Updated ports:")
+        print(f"  KONG_HTTP_PORT={env_vars['KONG_HTTP_PORT']}")
+        print(f"  KONG_HTTPS_PORT={env_vars['KONG_HTTPS_PORT']}")
+        print(f"  POSTGRES_PORT={env_vars['POSTGRES_PORT']}")
+        print(f"  POOLER_PROXY_PORT_TRANSACTION={env_vars['POOLER_PROXY_PORT_TRANSACTION']}")
+        print(f"  STUDIO_PORT={env_vars['STUDIO_PORT']}")
+        print(f"  ANALYTICS_HOST_PORT={env_vars['ANALYTICS_HOST_PORT']}")
+    elif port_range:
+        print(f"Warning: SUPABASE_PORT_RANGE '{port_range}' is not a valid 4-digit port number, ignoring")
+
 def read_env_config(config_path):
     """Read the .env.config file and return a dictionary of variables"""
     env_vars = {}
@@ -47,6 +73,10 @@ def read_env_config(config_path):
                     if key.endswith('='):
                         key = key[:-1]
                     env_vars[key] = value
+    
+    # Apply port range configuration if defined
+    apply_port_range(env_vars)
+    
     return env_vars
 
 def generate_jwt_secret():
@@ -79,9 +109,24 @@ def generate_supabase_keys(jwt_secret):
 
 def generate_encryption_keys():
     """Generate SECRET_KEY_BASE and VAULT_ENC_KEY"""
+    import subprocess
+    
+    # Generate SECRET_KEY_BASE
     key = secrets.token_bytes(32)
     secret_key_base = base64.b64encode(key).decode()
-    vault_enc_key = hashlib.sha256(key).hexdigest()
+    
+    # Generate VAULT_ENC_KEY using the exact command: openssl rand -base64 24
+    try:
+        result = subprocess.run(['openssl', 'rand', '-base64', '24'], 
+                              capture_output=True, text=True, check=True)
+        vault_enc_key = result.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        print(f"Error generating VAULT_ENC_KEY with openssl: {e}")
+        print("Falling back to Python generation...")
+        # Fallback if openssl is not available
+        vault_key_bytes = secrets.token_bytes(18)
+        vault_enc_key = base64.b64encode(vault_key_bytes).decode()
+    
     return secret_key_base, vault_enc_key
 
 def create_frontend_env(env_vars, jwt_secret, anon_key, service_role_key, deployment_mode='development'):
@@ -157,6 +202,7 @@ def update_supabase_env(env_vars, jwt_secret, anon_key, service_role_key, secret
     content = re.sub(r'KONG_HTTP_PORT=.*', f'KONG_HTTP_PORT={env_vars.get("KONG_HTTP_PORT", "8000")}', content)
     content = re.sub(r'KONG_HTTPS_PORT=.*', f'KONG_HTTPS_PORT={env_vars.get("KONG_HTTPS_PORT", "8443")}', content)
     content = re.sub(r'STUDIO_PORT=.*', f'STUDIO_PORT={env_vars.get("STUDIO_PORT", "3000")}', content)
+    content = re.sub(r'ANALYTICS_HOST_PORT=.*', f'ANALYTICS_HOST_PORT={env_vars.get("ANALYTICS_HOST_PORT", "4000")}', content)
     
     # Email configuration
     content = re.sub(r'ENABLE_EMAIL_AUTOCONFIRM=.*', f'ENABLE_EMAIL_AUTOCONFIRM={env_vars.get("ENABLE_EMAIL_AUTOCONFIRM", "false")}', content)
@@ -225,39 +271,55 @@ def update_env_config_with_keys(jwt_secret, anon_key, service_role_key, secret_k
         f.write(content)
     print("Updated .env.config with generated keys")
 
-def update_supabase_docker_compose(project_name):
-    """Update supabase/docker-compose.yml project name"""
+def update_supabase_docker_compose(project_name, env_vars):
+    """Update supabase/docker-compose.yml project name and analytics port"""
     docker_compose_path = 'supabase/docker-compose.yml'
+    setup_docker_compose_path = '.setup/supabase/docker-compose.yml'
     
-    # Check if the docker-compose.yml file exists
-    if not os.path.exists(docker_compose_path):
-        print(f"Warning: {docker_compose_path} not found, skipping docker-compose update")
-        return
+    # Update both docker-compose files
+    files_to_update = [docker_compose_path, setup_docker_compose_path]
     
-    try:
-        # Replace spaces with hyphens in project name
-        project_name_slug = project_name.replace(' ', '-').lower()
+    for file_path in files_to_update:
+        # Check if the docker-compose.yml file exists
+        if not os.path.exists(file_path):
+            print(f"Warning: {file_path} not found, skipping")
+            continue
         
-        # Read the docker-compose.yml file
-        with open(docker_compose_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
-        # First: Replace all occurrences of "supabase-" with "supabase-PROJECT_NAME-"
-        content = content.replace('supabase-', f'supabase-{project_name_slug}-')
-        
-        # Second: Update the project name: replace "name: supabase" with "name: supabase-PROJECT_NAME"
-        content = re.sub(r'name:\s*supabase\s*$', f'name: supabase-{project_name_slug}', content, flags=re.MULTILINE)
-        
-        # Write the updated content back to the file
-        with open(docker_compose_path, 'w', encoding='utf-8') as f:
-            f.write(content)
-        
-        print(f"Updated {docker_compose_path} project name to: supabase-{project_name_slug}")
-        print(f"Updated all container names: supabase-* -> supabase-{project_name_slug}-*")
-        
-    except Exception as e:
-        print(f"Error updating docker-compose.yml: {e}")
-        print("Continuing without docker-compose update...")
+        try:
+            # Replace spaces with hyphens in project name
+            project_name_slug = project_name.replace(' ', '-').lower()
+            
+            # Read the docker-compose.yml file
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # First: Replace all occurrences of "supabase-" with "supabase-PROJECT_NAME-"
+            content = content.replace('supabase-', f'supabase-{project_name_slug}-')
+            
+            # Second: Update the project name: replace "name: supabase" with "name: supabase-PROJECT_NAME"
+            content = re.sub(r'name:\s*supabase\s*$', f'name: supabase-{project_name_slug}', content, flags=re.MULTILINE)
+            
+            # Third: Update analytics port mapping based on file location
+            analytics_port = env_vars.get('ANALYTICS_HOST_PORT', '4000')
+            if file_path == docker_compose_path:
+                # Main docker-compose: replace hardcoded 4000:4000
+                content = re.sub(r'- 4000:4000', f'- {analytics_port}:4000', content)
+            elif file_path == setup_docker_compose_path:
+                # Setup docker-compose: replace ANALYTICS_HOST_PORT:4000 with actual port value
+                content = re.sub(r'- ANALYTICS_HOST_PORT:4000', f'- {analytics_port}:4000', content)
+            
+            # Write the updated content back to the file
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            
+            print(f"Updated {file_path}:")
+            print(f"  - Project name: supabase-{project_name_slug}")
+            print(f"  - Container names: supabase-* -> supabase-{project_name_slug}-*")
+            print(f"  - Analytics port: {analytics_port}:4000")
+            
+        except Exception as e:
+            print(f"Error updating {file_path}: {e}")
+            print("Continuing without docker-compose update...")
 
 def main():
     # Get deployment mode from command line arguments
@@ -280,9 +342,9 @@ def main():
     create_backend_env(env_vars, jwt_secret, anon_key, service_role_key, deployment_mode)
     update_supabase_env(env_vars, jwt_secret, anon_key, service_role_key, secret_key_base, vault_enc_key, deployment_mode)
     
-    # Update supabase docker-compose.yml project name
+    # Update supabase docker-compose.yml project name and analytics port
     project_name = env_vars.get('PROJECT_NAME', 'TheSuperProject').strip('"')
-    update_supabase_docker_compose(project_name)
+    update_supabase_docker_compose(project_name, env_vars)
     
     # Update .env.config with generated keys
     update_env_config_with_keys(jwt_secret, anon_key, service_role_key, secret_key_base, vault_enc_key)
