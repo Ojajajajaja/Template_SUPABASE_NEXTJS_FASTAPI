@@ -274,52 +274,42 @@ def update_env_config_with_keys(jwt_secret, anon_key, service_role_key, secret_k
 def update_supabase_docker_compose(project_name, env_vars):
     """Update supabase/docker-compose.yml project name and analytics port"""
     docker_compose_path = 'supabase/docker-compose.yml'
-    setup_docker_compose_path = '.setup/supabase/docker-compose.yml'
     
-    # Update both docker-compose files
-    files_to_update = [docker_compose_path, setup_docker_compose_path]
+    # Check if the docker-compose.yml file exists
+    if not os.path.exists(docker_compose_path):
+        print(f"Warning: {docker_compose_path} not found, skipping")
+        return
     
-    for file_path in files_to_update:
-        # Check if the docker-compose.yml file exists
-        if not os.path.exists(file_path):
-            print(f"Warning: {file_path} not found, skipping")
-            continue
+    try:
+        # Replace spaces with hyphens in project name
+        project_name_slug = project_name.replace(' ', '-').lower()
         
-        try:
-            # Replace spaces with hyphens in project name
-            project_name_slug = project_name.replace(' ', '-').lower()
-            
-            # Read the docker-compose.yml file
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-            
-            # First: Replace all occurrences of "supabase-" with "supabase-PROJECT_NAME-"
-            content = content.replace('supabase-', f'supabase-{project_name_slug}-')
-            
-            # Second: Update the project name: replace "name: supabase" with "name: supabase-PROJECT_NAME"
-            content = re.sub(r'name:\s*supabase\s*$', f'name: supabase-{project_name_slug}', content, flags=re.MULTILINE)
-            
-            # Third: Update analytics port mapping based on file location
-            analytics_port = env_vars.get('ANALYTICS_HOST_PORT', '4000')
-            if file_path == docker_compose_path:
-                # Main docker-compose: replace hardcoded 4000:4000
-                content = re.sub(r'- 4000:4000', f'- {analytics_port}:4000', content)
-            elif file_path == setup_docker_compose_path:
-                # Setup docker-compose: replace ANALYTICS_HOST_PORT:4000 with actual port value
-                content = re.sub(r'- ANALYTICS_HOST_PORT:4000', f'- {analytics_port}:4000', content)
-            
-            # Write the updated content back to the file
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(content)
-            
-            print(f"Updated {file_path}:")
-            print(f"  - Project name: supabase-{project_name_slug}")
-            print(f"  - Container names: supabase-* -> supabase-{project_name_slug}-*")
-            print(f"  - Analytics port: {analytics_port}:4000")
-            
-        except Exception as e:
-            print(f"Error updating {file_path}: {e}")
-            print("Continuing without docker-compose update...")
+        # Read the docker-compose.yml file
+        with open(docker_compose_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # First: Replace all occurrences of "supabase-" with "supabase-PROJECT_NAME-"
+        content = content.replace('supabase-', f'supabase-{project_name_slug}-')
+        
+        # Second: Update the project name: replace "name: supabase" with "name: supabase-PROJECT_NAME"
+        content = re.sub(r'name:\s*supabase\s*$', f'name: supabase-{project_name_slug}', content, flags=re.MULTILINE)
+        
+        # Third: Update analytics port mapping (replace hardcoded 4000:4000)
+        analytics_port = env_vars.get('ANALYTICS_HOST_PORT', '4000')
+        content = re.sub(r'- 4000:4000', f'- {analytics_port}:4000', content)
+        
+        # Write the updated content back to the file
+        with open(docker_compose_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        
+        print(f"Updated {docker_compose_path}:")
+        print(f"  - Project name: supabase-{project_name_slug}")
+        print(f"  - Container names: supabase-* -> supabase-{project_name_slug}-*")
+        print(f"  - Analytics port: {analytics_port}:4000")
+        
+    except Exception as e:
+        print(f"Error updating {docker_compose_path}: {e}")
+        print("Continuing without docker-compose update...")
 
 def main():
     # Get deployment mode from command line arguments
