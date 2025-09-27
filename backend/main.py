@@ -26,12 +26,12 @@ app = FastAPI(
 security = HTTPBearer()
 
 # Supabase configuration
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
-API_PREFIX = os.getenv("API_PREFIX")
-API_PORT = int(os.getenv("API_PORT"))
-CORS_ORIGINS = os.getenv("CORS_ORIGINS").split(",")
+SUPABASE_URL = os.getenv("SUPABASE_URL") or ""
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY") or ""
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY") or ""
+API_PREFIX = os.getenv("API_PREFIX") or "/api"
+API_PORT = int(os.getenv("API_PORT", "8000"))
+CORS_ORIGINS = (os.getenv("CORS_ORIGINS") or "http://localhost:3000").split(",")
 
 # Create Supabase client
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
@@ -72,8 +72,14 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
     try:
         # Use service key for backend operations
         supabase_service: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-        user = supabase_service.auth.get_user(credentials.credentials)
-        return user
+        user_response = supabase_service.auth.get_user(credentials.credentials)
+        if not user_response or not user_response.user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return user_response
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -114,25 +120,30 @@ async def get_profile(credentials: HTTPAuthorizationCredentials = Depends(securi
         supabase_service: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
         
         # Get current user
-        user = supabase_service.auth.get_user(credentials.credentials)
-        user_id = user.user.id
+        user_response = supabase_service.auth.get_user(credentials.credentials)
+        if not user_response or not user_response.user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found"
+            )
+        user_id = user_response.user.id
         
         # Get user profile from user_profiles table
         profile_response = supabase_service.table("user_profiles").select("*").eq("id", user_id).execute()
         
         # Get user metadata from auth table
-        user_metadata = user.user.user_metadata if user.user.user_metadata else {}
+        user_metadata = user_response.user.user_metadata if user_response.user.user_metadata else {}
         
         # Combine profile data
         profile_data = {
             "id": user_id,
-            "email": user.user.email,
+            "email": user_response.user.email,
             "first_name": user_metadata.get("first_name", ""),
             "last_name": user_metadata.get("last_name", ""),
             "full_name": user_metadata.get("full_name", ""),
             "phone": user_metadata.get("phone", ""),
             "role": "user",  # Valeur par défaut
-            "created_at": user.user.created_at
+            "created_at": user_response.user.created_at
         }
         
         # If we have profile data from the user_profiles table, merge it
@@ -260,6 +271,9 @@ async def update_profile(profile_data: ProfileUpdateData, credentials: HTTPAutho
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
+
+# Application instance pour Gunicorn
+app_instance = app
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=API_PORT)
