@@ -210,6 +210,13 @@ async def login(login_data: LoginData):
             "email": login_data.email,
             "password": login_data.password,
         })
+        
+        if not response.session or not response.session.access_token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Login failed"
+            )
+            
         return {"access_token": response.session.access_token, "user": response.user}
     except Exception as e:
         raise HTTPException(
@@ -231,8 +238,13 @@ async def update_profile(profile_data: ProfileUpdateData, credentials: HTTPAutho
         supabase_service: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
         
         # Get current user
-        user = supabase_service.auth.get_user(credentials.credentials)
-        user_id = user.user.id
+        user_response = supabase_service.auth.get_user(credentials.credentials)
+        if not user_response or not user_response.user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found"
+            )
+        user_id = user_response.user.id
         
         # Prepare update data
         update_data = {}
@@ -275,5 +287,74 @@ async def update_profile(profile_data: ProfileUpdateData, credentials: HTTPAutho
 # Application instance pour Gunicorn
 app_instance = app
 
+def run_development():
+    """Lance le serveur en mode développement avec uvicorn et rechargement automatique"""
+    print("🚀 Démarrage en mode DÉVELOPPEMENT")
+    print("================================================")
+    print(f"Host: 0.0.0.0")
+    print(f"Port: {API_PORT}")
+    print("Mode: Développement (rechargement automatique)")
+    print("================================================")
+    
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=API_PORT,
+        reload=True,
+        log_level="info"
+    )
+
+def run_production():
+    """Lance le serveur en mode production avec Gunicorn"""
+    import subprocess
+    import sys
+    
+    print("🚀 Démarrage en mode PRODUCTION")
+    print("================================================")
+    print(f"Host: 0.0.0.0")
+    print(f"Port: {API_PORT}")
+    print("Mode: Production (Gunicorn + workers multiples)")
+    print("================================================")
+    
+    # Commande Gunicorn avec uv
+    cmd = [
+        "uv", "run",
+        "gunicorn",
+        "main:app",
+        "--config", "gunicorn.conf.py",
+        "--bind", f"0.0.0.0:{API_PORT}"
+    ]
+    
+    try:
+        subprocess.run(cmd, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Erreur lors du démarrage de Gunicorn: {e}")
+        sys.exit(1)
+    except FileNotFoundError:
+        print("❌ uv ou Gunicorn n'est pas installé. Vérifiez votre installation.")
+        sys.exit(1)
+
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=API_PORT)
+    import sys
+    
+    # Si aucun argument, démarrer en mode développement par défaut
+    if len(sys.argv) == 1:
+        run_development()
+    elif len(sys.argv) == 2:
+        mode = sys.argv[1].lower()
+        if mode in ["dev", "development"]:
+            run_development()
+        elif mode in ["prod", "production"]:
+            run_production()
+        else:
+            print("❌ Mode non reconnu. Utilisez:")
+            print("  uv run main.py dev         # Mode développement")
+            print("  uv run main.py prod        # Mode production")
+            print("  uv run main.py             # Mode développement (défaut)")
+            sys.exit(1)
+    else:
+        print("❌ Trop d'arguments. Utilisez:")
+        print("  uv run main.py dev         # Mode développement")
+        print("  uv run main.py prod        # Mode production")
+        print("  uv run main.py             # Mode développement (défaut)")
+        sys.exit(1)

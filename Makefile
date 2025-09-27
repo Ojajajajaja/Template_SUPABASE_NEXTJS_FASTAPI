@@ -148,38 +148,30 @@ backend-start-dev:
 		echo "⚠️  Backend .env file not found. Please run 'make setup' first."; \
 		exit 1; \
 	fi
-	@echo "Starting FastAPI development server..."
-	@cd backend && python main.py
+	@echo "Starting FastAPI development server with auto-reload..."
+	@cd backend && uv run main.py dev
 
 backend-stop-dev:
 	@echo "🛑 Stopping backend development server..."
-	@pkill -f "python main.py" || true
+	@pkill -f "uv run main.py" || true
 	@pkill -f "uvicorn main:app" || true
 	@echo "✓ Backend development server stopped"
 
 # Backend management - Production
 backend-start-prod:
-	@echo "⚙️  Starting backend with PM2..."
-	@if ! command -v pm2 >/dev/null 2>&1; then \
-		echo "❌ PM2 not installed. Please run 'make build' first."; \
-		exit 1; \
-	fi
+	@echo "⚙️  Starting backend with Gunicorn via main.py..."
 	@if [ ! -f "backend/.env" ]; then \
 		echo "⚠️  Backend .env file not found. Please run 'make setup' first."; \
 		exit 1; \
 	fi
-	@cd backend && pm2 start main.py --name "backend" --interpreter python
-	@echo "✓ Backend started with PM2"
+	@echo "Starting FastAPI production server with Gunicorn..."
+	@cd backend && uv run main.py prod
 
 backend-stop-prod:
-	@echo "🛑 Stopping backend PM2 process..."
-	@if command -v pm2 >/dev/null 2>&1; then \
-		pm2 stop backend 2>/dev/null || echo "Backend process not found"; \
-		pm2 delete backend 2>/dev/null || true; \
-	else \
-		echo "⚠️  PM2 not installed"; \
-	fi
-	@echo "✓ Backend PM2 process stopped"
+	@echo "🛑 Stopping backend production server..."
+	@pkill -f "gunicorn main:app" || true
+	@pkill -f "uv run main.py prod" || true
+	@echo "✓ Backend production server stopped"
 
 # Supabase management
 supabase-start:
@@ -234,10 +226,14 @@ status:
 	fi
 	@echo ""
 	@echo "Backend:"
-	@if pgrep -f "python main.py" > /dev/null; then \
+	@if pgrep -f "uv run main.py" > /dev/null; then \
+		echo "  🟢 Server running"; \
+	elif pgrep -f "uvicorn main:app" > /dev/null; then \
 		echo "  🟢 Development server running"; \
+	elif pgrep -f "gunicorn main:app" > /dev/null; then \
+		echo "  🟢 Production server running (Gunicorn)"; \
 	else \
-		echo "  🔴 Development server stopped"; \
+		echo "  🔴 Server stopped"; \
 	fi
 	@echo ""
 	@echo "Supabase:"

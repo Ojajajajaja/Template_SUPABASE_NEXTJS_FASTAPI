@@ -1,6 +1,108 @@
-# Backend API Documentation
+# 🚀 Backend FastAPI avec Supabase
 
-This document provides detailed information about the available endpoints and functionalities of the FastAPI backend with Supabase integration.
+Backend FastAPI moderne avec authentification Supabase et support multi-mode (développement/production).
+
+## 📋 Démarrage Rapide
+
+### Mode Développement (Recommandé pour le dev)
+```bash
+# Mode par défaut avec rechargement automatique
+python main.py
+
+# ou explicitement
+python main.py dev
+```
+
+### Mode Production
+```bash
+# Avec Gunicorn et workers multiples
+python main.py prod
+```
+
+## 🎯 Différences entre les modes
+
+| Aspect | Développement | Production |
+|--------|---------------|------------|
+| **Serveur** | Uvicorn seul | Gunicorn + Uvicorn workers |
+| **Processus** | 1 | Multiple (CPU × 2 + 1) |
+| **Rechargement** | ✅ Automatique | ❌ Manuel |
+| **Performance** | Normale | Optimisée |
+| **Debugging** | ✅ Facile | Plus complexe |
+| **Logs** | Détaillés | Production-ready |
+
+## ⚙️ Configuration
+
+Créez un fichier `.env` :
+
+```env
+# API Configuration
+API_PORT=8000
+API_PREFIX=/api
+PROJECT_NAME="Mon Backend"
+
+# Supabase Configuration
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_KEY=your_supabase_service_role_key
+
+# CORS Configuration  
+CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
+
+# Gunicorn Configuration (production only)
+GUNICORN_WORKERS=auto
+```
+
+## 🛠️ Installation
+
+```bash
+# Installer les dépendances
+pip install -r requirements.txt
+
+# ou avec pyproject.toml
+pip install -e .
+```
+
+## 🧪 Tests
+
+```bash
+# Tester les modes de démarrage
+python test_modes.py dev
+python test_modes.py prod
+```
+
+## 🚨 Migration depuis l'ancienne version
+
+L'ancien script `start_gunicorn.sh` a été remplacé par le système unifié dans `main.py`.
+
+**Avant :**
+```bash
+./start_gunicorn.sh dev
+./start_gunicorn.sh start
+```
+
+**Maintenant :**
+```bash
+python main.py dev
+python main.py prod
+```
+
+## 🔧 Commandes Make disponibles
+
+```bash
+# Développement
+make backend-start-dev    # Lance en mode dev
+make backend-stop-dev     # Arrête le serveur dev
+
+# Production  
+make backend-start-prod   # Lance en mode production
+make backend-stop-prod    # Arrête le serveur prod
+```
+
+## 📖 Documentation détaillée
+
+Voir [RUN_MODES.md](./RUN_MODES.md) pour plus de détails sur les modes de démarrage.
+
+---
 
 ## Table of Contents
 - [Authentication](#authentication)

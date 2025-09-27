@@ -26,7 +26,9 @@ max_requests = 1000
 max_requests_jitter = 100
 
 # Preload application (améliore les performances)
-preload_app = True
+# ATTENTION: peut causer des problèmes avec Supabase en local
+# Désactivé pour éviter les problèmes de connexions partagées
+preload_app = False
 
 # Logging
 accesslog = "-"
