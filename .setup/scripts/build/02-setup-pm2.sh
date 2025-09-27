@@ -134,7 +134,7 @@ module.exports = {
       name: 'backend',
       cwd: './backend',
       script: 'python',
-      args: 'main.py',
+      args: 'main.py prod',
       env: {
         PYTHONPATH: './backend',
         API_PORT: process.env.API_PORT || 2000
