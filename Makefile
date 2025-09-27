@@ -1,7 +1,7 @@
 # Makefile for Template SUPABASE NEXTJS FASTAPI
 # Provides convenient commands for development and production
 
-.PHONY: help dev prod install-deps setup setup-dev setup-prod build deploy frontend-start-dev frontend-stop-dev frontend-start-prod frontend-stop-prod backend-start-dev backend-stop-dev backend-start-prod backend-stop-prod supabase-start supabase-stop supabase-restart clean
+.PHONY: help dev prod deps setup setup-dev setup-prod build deploy frontend-start-dev frontend-stop-dev frontend-start-prod frontend-stop-prod backend-start-dev backend-stop-dev backend-start-prod backend-stop-prod supabase-start supabase-stop supabase-restart clean
 
 # Default target
 help:
@@ -12,18 +12,18 @@ help:
 	@echo "Available commands:"
 	@echo ""
 	@echo "Dependencies & Setup:"
-	@echo "  make install-deps    - Install all system dependencies (run FIRST)"
+	@echo "  make deps    - Install all system dependencies (run FIRST)"
 	@echo "  make setup-dev       - Run initial project setup development mode"
 	@echo "  make setup-prod      - Run initial project setup production mode"
 	@echo ""
 	@echo "Development:"
 	@echo "  make dev             - Setup project for development"
 	@echo ""
-	@echo "⚠️  IMPORTANT: Run 'make install-deps' before any other commands in production"
+	@echo "⚠️  IMPORTANT: Run 'make deps' before any other commands in production"
 	@echo ""
 	@echo "Production:"
 	@echo "  make prod            - Full production deployment (setup + user + build + deploy)"
-	@echo "  make setup-user      - Setup production user and relocate project"
+	@echo "  make user      - Setup production user and relocate project"
 	@echo "  make build           - Build and start applications with PM2"
 	@echo "  make deploy          - Deploy with Nginx and HTTPS"
 	@echo ""
@@ -56,7 +56,7 @@ help:
 	@echo ""
 
 # Dependencies installation
-install-deps:
+deps:
 	@echo "📦 Installing system dependencies..."
 	@./.setup/scripts/00-install-dependencies.sh
 
@@ -70,7 +70,9 @@ dev: setup-dev
 	@echo "  make supabase-start      - Start Supabase services"
 
 # Production workflow (with dependencies check)
-prod: setup-prod setup-user build deploy
+
+
+prod: setup-prod build deploy
 	@echo "✓ Production deployment completed!"
 	@echo ""
 	@echo "Your applications are now running in production mode."
@@ -88,7 +90,7 @@ setup-prod:
 	@echo "🔧 Running project setup..."
 	@./.setup/scripts/01-setup.sh prod
 
-setup-user:
+user:
 	@echo "👥 Setting up production user..."
 	@./.setup/scripts/00-setup-user.sh
 
