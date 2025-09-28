@@ -138,7 +138,7 @@ module.exports = {
       name: 'backend',
       cwd: './backend',
       script: 'uv',
-      args: 'run run.py',
+      args: 'run run.py prod',
       env: {
         API_PORT: $API_PORT
       },
