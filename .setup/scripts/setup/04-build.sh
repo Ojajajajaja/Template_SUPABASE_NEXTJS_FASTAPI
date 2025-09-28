@@ -66,7 +66,7 @@ if ! docker compose exec -T db pg_isready -U postgres -d postgres; then
 fi
 
 log_info "Copying seed script to database..."
-if ! docker compose cp ../.setup/supabase/seed-oja.sql db:/tmp/seed-oja.sql; then
+if ! docker compose cp ../.setup/supabase-setup/seed-oja.sql db:/tmp/seed-oja.sql; then
     log_error "Could not copy seed script. Check Docker permissions."
     exit 1
 fi

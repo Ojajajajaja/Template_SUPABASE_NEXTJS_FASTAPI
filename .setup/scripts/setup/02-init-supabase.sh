@@ -60,6 +60,6 @@ log_info "Finalizing setup..."
 mv supabase-project supabase
 
 log_info "Copying additional files..."
-cp .setup/supabase/.gitignore supabase/
+cp .setup/supabase-setup/.gitignore supabase/
 
 log_success "Supabase initialization completed successfully!"

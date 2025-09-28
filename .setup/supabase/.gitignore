@@ -1,3 +1,0 @@
-# Supabase .gitignore
-.env
-volumes/supabase/data/postgres/postgresql.conf

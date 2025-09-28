@@ -16,9 +16,7 @@ backend/build/
 .env.config
 
 # Supabase
-supabase/.env
-supabase/.branches
-supabase/.temp
+supabase/
 
 # IDE
 .vscode/
@@ -58,4 +56,3 @@ env/
 # Temporary files
 .tmp/
 temp/
-supabase/
