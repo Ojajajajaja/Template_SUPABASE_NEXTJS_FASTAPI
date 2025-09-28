@@ -1,10 +1,36 @@
 #!/bin/bash
-#!/bin/bash
 
-# Main project configuration script
+# =============================================================================
+# Project Setup Script - Template SUPABASE NEXTJS FASTAPI
+# =============================================================================
 # Executes all configuration scripts in order
+# =============================================================================
 
 set -e  # Stop script if a command fails
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Logging functions
+log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+log_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
 
 # Determine project root directory robustly
 # This script can be called from different locations
@@ -41,11 +67,9 @@ fi
 # Change to project root
 cd "$PROJECT_ROOT"
 
-echo "========================================"
-echo "  PROJECT CONFIGURATION SCRIPT"
-echo "========================================"
+echo "Project Setup"
 echo "Project root: $PROJECT_ROOT"
-echo ""
+echo
 
 # Check if deployment mode is provided as argument
 if [ $# -eq 1 ]; then
@@ -71,10 +95,10 @@ fi
 # Interactive mode if no valid argument provided
 if [ -z "$DEPLOYMENT_MODE" ]; then
     echo "Choose deployment mode:"
-    echo "1) Development (localhost)"
-    echo "2) Production (configured domains)"
-    echo ""
-    read -p "Enter your choice (1 or 2): " CHOICE
+    echo "1) Development"
+    echo "2) Production"
+    echo
+    read -p "Enter choice (1-2): " CHOICE
 
     case $CHOICE in
         1)
@@ -86,7 +110,7 @@ if [ -z "$DEPLOYMENT_MODE" ]; then
             echo "Production mode selected"
             ;;
         *)
-            echo "Invalid choice. Development mode selected by default."
+            echo "Invalid choice. Development mode selected."
             export DEPLOYMENT_MODE="development"
             ;;
     esac
@@ -94,50 +118,27 @@ fi
 
 # Check if running as root in production mode
 if [[ "$DEPLOYMENT_MODE" == "production" && $EUID -eq 0 ]]; then
-    echo "Error: Cannot run setup script as root in production mode!"
-    echo "Please switch to your production user and run the script again."
-    echo "If you haven't created a production user yet, run:"
-    echo "  sudo ./.setup/scripts/00-setup-user.sh"
-    echo "Then switch to that user with:"
-    echo "  su - <your_production_user>"
-    exit 1
+        log_error "Cannot run setup script as root in production mode!"
+        log_info "Switch to your production user and run the script again."
+        exit 1
 fi
 
 echo ""
 
-# 1) Check dependencies
-echo "1) Checking dependencies..."
-echo "----------------------------------------"
+log_info "1) Checking dependencies..."
 ./.setup/scripts/setup/01-check-dependencies.sh "$DEPLOYMENT_MODE"
-echo ""
+echo
 
-# 2) Initialize Supabase
-echo "2) Initializing Supabase..."
-echo "----------------------------------------"
+log_info "2) Initializing Supabase..."
 ./.setup/scripts/setup/02-init-supabase.sh
-echo ""
+echo
 
-# 3) Generate environment files
-echo "3) Generating environment files..."
-echo "----------------------------------------"
-echo "Running environment generation script..."
+log_info "3) Generating environment files..."
 uv run ./.setup/scripts/setup/03-generate_env.py "$DEPLOYMENT_MODE"
-echo ""
+echo
 
-# 4) Build project
-echo "4) Building project..."
-echo "----------------------------------------"
+log_info "4) Building project..."
 ./.setup/scripts/setup/04-build.sh
-echo ""
+echo
 
-echo "========================================"
-echo "  CONFIGURATION COMPLETED SUCCESSFULLY !"
-echo "========================================"
-echo ""
-echo "The following steps have been completed:"
-echo "✓ Dependency check"
-echo "✓ Supabase initialization"
-echo "✓ Environment file generation"
-echo "✓ Project build"
-echo ""
-echo "You can now start the project with the appropriate commands."
+log_success "Setup completed successfully"

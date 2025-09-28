@@ -1,7 +1,10 @@
 #!/bin/bash
 
-# Nginx installation and configuration script
+# =============================================================================
+# Nginx Installation Script - Template SUPABASE NEXTJS FASTAPI
+# =============================================================================
 # Installs Nginx, Let's Encrypt and configures sites
+# =============================================================================
 
 set -e  # Stop script on error
 
@@ -34,49 +37,39 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../" && pwd)"
 NGINX_CONFIG_DIR="$PROJECT_ROOT/nginx"
 
-log_info "=== Nginx Installation and Configuration ==="
+log_info "Nginx Installation and Configuration"
 log_info "Project directory: $PROJECT_ROOT"
 log_info "Configurations directory: $NGINX_CONFIG_DIR"
 
-# Check root permissions
 if [[ $EUID -ne 0 ]]; then
    log_error "This script must be run with sudo"
-   log_info "Usage: sudo .setup/scripts/deploy/02-install-nginx.sh"
    exit 1
 fi
 
-# Check that nginx directory exists
 if [[ ! -d "$NGINX_CONFIG_DIR" ]]; then
     log_error "Nginx directory does not exist: $NGINX_CONFIG_DIR"
-    log_info "Please first run the configuration generation script"
     exit 1
 fi
 
-# Check if Nginx is installed
 if ! command -v nginx &> /dev/null; then
     log_error "Nginx is not installed"
-    log_info "Please run 'make install-deps' or './.setup/scripts/00-install-dependencies.sh' first"
     exit 1
 else
     log_info "Nginx is already installed"
 fi
 
-# Check if Certbot is installed
 if ! command -v certbot &> /dev/null; then
     log_error "Certbot is not installed"
-    log_info "Please run 'make install-deps' or './.setup/scripts/00-install-dependencies.sh' first"
     exit 1
 else
     log_info "Certbot is already installed"
 fi
 
-# Start and enable Nginx
 log_info "Configuring Nginx service..."
 systemctl enable nginx
 systemctl start nginx
 log_success "Nginx service enabled and started"
 
-# Configure basic firewall (if UFW is available)
 log_info "Configuring firewall..."
 if command -v ufw &> /dev/null; then
     ufw --force enable
@@ -87,7 +80,6 @@ else
     log_warning "UFW not available, skipping firewall configuration"
 fi
 
-# Copy configurations to sites-available
 log_info "Copying Nginx configurations..."
 for conf_file in "$NGINX_CONFIG_DIR"/*.conf; do
     if [[ -f "$conf_file" ]]; then
@@ -97,15 +89,13 @@ for conf_file in "$NGINX_CONFIG_DIR"/*.conf; do
     fi
 done
 
-# Remove default configuration if it exists
 if [[ -f "/etc/nginx/sites-enabled/default" ]]; then
     log_info "Removing default configuration..."
     rm -f "/etc/nginx/sites-enabled/default"
     log_success "Default configuration removed"
 fi
 
-# Remove any existing SSL configurations that might be causing issues
-log_info "Cleaning up any existing configurations..."
+log_info "Cleaning up existing configurations..."
 rm -f /etc/nginx/sites-enabled/*.conf
 log_success "Existing configurations cleaned"
 
@@ -113,52 +103,22 @@ log_success "Existing configurations cleaned"
 log_info "Preparing configurations (sites will be enabled during SSL setup)..."
 # Don't create any symbolic links here - let the SSL script handle this
 
-# Test Nginx configuration (should be OK since no SSL sites are enabled yet)
 log_info "Testing Nginx configuration..."
-log_info "Checking for any SSL references..."
 
-# Check if there are any SSL configurations causing issues
 if grep -r "ssl_certificate" /etc/nginx/sites-enabled/ 2>/dev/null; then
-    log_warning "Found SSL references in enabled sites - removing them"
+    log_warning "Found SSL references - removing them"
     rm -f /etc/nginx/sites-enabled/*.conf
 fi
-
-# Ensure sites-enabled is clean
-log_info "Current enabled sites: $(ls -la /etc/nginx/sites-enabled/ | grep -v '^total' || echo 'none')"
 
 if nginx -t; then
     log_success "Nginx configuration is valid"
     
-    # Reload Nginx
     log_info "Reloading Nginx..."
     systemctl reload nginx
     log_success "Nginx reloaded successfully"
 else
     log_error "Nginx configuration test failed"
-    log_info "Checking nginx configuration details..."
-    nginx -T 2>&1 | grep -A5 -B5 "ssl_certificate" || log_info "No SSL certificate references found"
     exit 1
 fi
 
-# Display service status
-log_info "Service status:"
-echo "----------------------------------------"
-systemctl status nginx --no-pager -l
-echo "----------------------------------------"
-
-log_success "=== Installation and configuration completed successfully ==="
-echo ""
-log_info "Installed and configured services:"
-log_info "  ✓ Nginx (web server)"
-log_info "  ✓ Certbot (Let's Encrypt SSL)"
-log_info "  ✓ UFW (firewall)"
-echo ""
-log_info "Nginx configurations copied to sites-available:"
-for conf_file in /etc/nginx/sites-available/*.conf; do
-    if [[ -f "$conf_file" ]]; then
-        filename=$(basename "$conf_file" .conf)
-        log_info "  • $filename (ready for SSL setup)"
-    fi
-done
-echo ""
-log_warning "Note: Sites are not active yet. Run the HTTPS setup script to enable them with SSL."
+log_success "Installation and configuration completed successfully"

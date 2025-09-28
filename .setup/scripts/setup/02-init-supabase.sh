@@ -1,44 +1,65 @@
 #!/bin/bash
 
+# =============================================================================
+# Supabase Init Script - Template SUPABASE NEXTJS FASTAPI
+# =============================================================================
 # Script to initialize Supabase Docker
-echo "Initializing Supabase Docker..."
+# =============================================================================
 
-# Check if supabase directory already exists
+set -e  # Stop script on error
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Logging functions
+log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+log_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+log_info "Initializing Supabase Docker..."
+
 if [ -d "supabase" ]; then
-    echo "The 'supabase' directory already exists. Renaming to 'supabase_old'..."
-    # Rename existing directory
+    log_warning "Directory 'supabase' exists. Renaming to 'supabase_old'..."
     mv supabase supabase_old
-    echo "Successfully renamed."
+    log_success "Renamed successfully"
 fi
 
-# Clone Supabase repository with depth 1 for quick retrieval
-echo "Cloning Supabase repository..."
+log_info "Cloning Supabase repository..."
 git clone --depth 1 https://github.com/supabase/supabase
 
-# Create Supabase project directory
-echo "Creating Supabase project directory..."
+log_info "Creating Supabase project directory..."
 mkdir supabase-project
 
-# Copy Docker files from cloned repository to project
-echo "Copying Docker files..."
+log_info "Copying Docker files..."
 cp -rf supabase/docker/* supabase-project
 
-# Copy environment file
-echo "Copying environment file..."
+log_info "Copying environment file..."
 cp supabase/docker/.env.example supabase-project/.env.example
 cp supabase/docker/.env.example supabase-project/.env
 
-# Remove cloned repository
-echo "Cleaning up cloned repository..."
+log_info "Cleaning up cloned repository..."
 rm -rf supabase/
 
-# Rename project directory to 'supabase'
-echo "Finalizing: renaming project directory..."
+log_info "Finalizing setup..."
 mv supabase-project supabase
 
-# Additional commands
-echo "Copying additional files..."
+log_info "Copying additional files..."
 cp .setup/supabase/.gitignore supabase/
 
-echo "Initialization completed successfully!"
-echo "The 'supabase' directory is now ready to be used."
+log_success "Supabase initialization completed successfully!"

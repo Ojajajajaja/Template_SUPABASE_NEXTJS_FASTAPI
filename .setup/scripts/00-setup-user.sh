@@ -1,18 +1,21 @@
 #!/bin/bash
 
-# User setup and project relocation script
+# =============================================================================
+# User Setup Script - Template SUPABASE NEXTJS FASTAPI
+# =============================================================================
 # Creates production user, moves project to user home, and sets permissions
+# =============================================================================
 
 set -e  # Stop script on error
 
-# Colors for messages
+# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Functions to display messages
+# Logging functions
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
 }
@@ -273,29 +276,9 @@ fi
 
 log_success "User profile configured"
 
-# Display final information
+# Setup completed - simple output
 echo ""
-log_success "=== User setup completed successfully ==="
+log_success "User setup completed successfully"
 echo ""
-log_info "Production environment configured:"
-log_info "  ✓ User: $PROD_USERNAME"
-log_info "  ✓ Home: $PROD_USER_HOME"
-log_info "  ✓ Project: $NEW_PROJECT_PATH"
-log_info "  ✓ Groups: sudo, docker (if available)"
-log_info "  ✓ Permissions: configured"
-echo ""
-log_warning "IMPORTANT: Please switch to the production user to continue!"
-echo ""
-log_info "To switch to the production user:"
-log_info "  su - $PROD_USERNAME"
-echo ""
-log_info "Once logged in as $PROD_USERNAME, continue with:"
-log_info "  ./.setup/scripts/01-setup.sh prod    # Project setup"
-log_info "  ./.setup/scripts/02-build.sh        # Build and start with PM2"
-log_info "  ./.setup/scripts/03-deploy.sh       # Deploy with Nginx/HTTPS"
-echo ""
-log_info "Or use the make shortcuts:"
-log_info "  make setup    # Project setup"
-log_info "  make build    # Build and PM2"
-log_info "  make deploy   # Nginx deployment"
-echo ""
+log_info "Switch to production user:"
+echo "  su - $PROD_USERNAME"

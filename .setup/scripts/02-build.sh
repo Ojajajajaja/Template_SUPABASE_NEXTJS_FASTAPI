@@ -1,9 +1,36 @@
 #!/bin/bash
 
-# Main project build script
+# =============================================================================
+# Project Build Script - Template SUPABASE NEXTJS FASTAPI
+# =============================================================================
 # Executes all build scripts in order
+# =============================================================================
 
 set -e  # Stop script if a command fails
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Logging functions
+log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+log_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
 
 # Determine project root directory robustly
 # This script can be called from different locations
@@ -40,56 +67,31 @@ fi
 # Change to project root
 cd "$PROJECT_ROOT"
 
-# Check if running as root (not recommended for build operations)
+# Check if running as root
 if [[ $EUID -eq 0 ]]; then
-    echo "Warning: Running build script as root is not recommended!"
-    echo "For production environments, please use a dedicated user account."
-    echo "If you need to create a production user, run:"
-    echo "  sudo ./.setup/scripts/00-setup-user.sh"
-    echo ""
-    read -p "Do you want to continue anyway? (y/N): " CONTINUE
+    log_warning "Running as root is not recommended for build operations!"
+    read -p "Continue anyway? (y/N): " CONTINUE
     if [[ "$CONTINUE" != "y" && "$CONTINUE" != "Y" ]]; then
-        echo "Build cancelled."
+        log_error "Build cancelled"
         exit 1
     fi
-    echo ""
+    echo
 fi
 
-echo "========================================"
-echo "     PROJECT BUILD SCRIPT"
-echo "========================================"
+echo "Project Build"
 echo "Project root: $PROJECT_ROOT"
-echo ""
+echo
 
-# 1) Build frontend
-echo "1) Building frontend application..."
-echo "----------------------------------------"
+log_info "1) Building frontend application..."
 ./.setup/scripts/build/01-build-frontend.sh
-echo ""
+echo
 
-# 2) Setup PM2
-echo "2) Setting up PM2 process manager..."
-echo "----------------------------------------"
+log_info "2) Setting up PM2 process manager..."
 ./.setup/scripts/build/02-setup-pm2.sh
-echo ""
+echo
 
-# 3) Start services
-echo "3) Starting all services..."
-echo "----------------------------------------"
+log_info "3) Starting all services..."
 ./.setup/scripts/build/03-start-services.sh
-echo ""
+echo
 
-echo "========================================"
-echo "   BUILD COMPLETED SUCCESSFULLY !"
-echo "========================================"
-echo ""
-echo "The following steps have been completed:"
-echo "✓ Frontend application build"
-echo "✓ PM2 process manager setup"
-echo "✓ Services started with PM2"
-echo ""
-echo "Your applications are now running in production mode!"
-echo "Access your applications:"
-echo "- Frontend: Check the URLs displayed above"
-echo "- Backend API: Check the URLs displayed above"
-echo "- Use 'pm2 status' to monitor your applications"
+log_success "Build completed successfully"

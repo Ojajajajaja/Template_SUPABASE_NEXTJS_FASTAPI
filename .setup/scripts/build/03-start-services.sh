@@ -1,7 +1,10 @@
 #!/bin/bash
 
-# Services launch script
+# =============================================================================
+# Services Start Script - Template SUPABASE NEXTJS FASTAPI
+# =============================================================================
 # Starts all applications using PM2
+# =============================================================================
 
 set -e  # Stop script on error
 
@@ -62,52 +65,38 @@ fi
 
 ECOSYSTEM_CONFIG="$PROJECT_ROOT/ecosystem.config.js"
 
-log_info "=== Services Launch Process ==="
+log_info "Services Launch Process"
 log_info "Project directory: $PROJECT_ROOT"
 
-# Check if PM2 is installed
 if ! command -v pm2 &> /dev/null; then
     log_error "PM2 is not installed"
-    log_info "Please run 'make install-deps' first"
     exit 1
 fi
 
-# Start all applications using PM2
 log_info "Starting applications with PM2..."
 
-# First, ensure we're in the project root directory
 cd "$PROJECT_ROOT"
 
-# Stop and delete any existing PM2 processes to avoid conflicts
 log_info "Cleaning up any existing PM2 processes..."
-
 pm2 delete all 2>/dev/null || true
 pm2 kill 2>/dev/null || true
 
-# Remove PM2 cache and any default ecosystem files that might interfere
 rm -f "$HOME/.pm2/dump.pm2" 2>/dev/null || true
-
-# Wait a moment for cleanup
 sleep 2
 
-# Always create a fresh, correct ecosystem configuration
 log_info "Creating fresh ecosystem configuration..."
 
-# Ensure logs directory exists
 mkdir -p "$PROJECT_ROOT/logs"
 
-# Verify UV is available
 if ! command -v uv &> /dev/null; then
-    log_error "UV not found. Please install UV first with 'make install-deps'."
+    log_error "UV not found. Please install UV first."
     exit 1
 fi
 
-# Load configuration to get ports
 if [[ -f "$PROJECT_ROOT/.setup/.env.config" ]]; then
     source "$PROJECT_ROOT/.setup/.env.config"
 fi
 
-# Set defaults if not defined
 FRONTEND_PORT=${FRONTEND_PORT:-3000}
 API_PORT=${API_PORT:-2000}
 
@@ -153,60 +142,34 @@ module.exports = {
     }
   ]
 };
-EOF
 log_success "Fresh ecosystem configuration created"
 
-# Start fresh with our ecosystem configuration
-log_info "Starting fresh PM2 processes with ecosystem config..."
+log_info "Starting PM2 processes..."
 
-# Start with our specific ecosystem file, using absolute path
 if pm2 start "$(realpath "$ECOSYSTEM_CONFIG")" --env production; then
-    log_success "PM2 start command executed successfully"
+    log_success "PM2 processes started successfully"
 else
     log_error "Failed to start applications with PM2"
-    log_info "Ecosystem config file: $ECOSYSTEM_CONFIG"
-    log_info "Current directory: $(pwd)"
-    if [[ -f "$ECOSYSTEM_CONFIG" ]]; then
-        log_info "Ecosystem config exists, checking contents..."
-        head -20 "$ECOSYSTEM_CONFIG"
-    else
-        log_error "Ecosystem config file not found!"
-    fi
     exit 1
 fi
 
-echo ""
 log_info "Checking service status..."
-
-# Display PM2 status
-log_info "Current PM2 status:"
 echo "----------------------------------------"
 pm2 status
 echo "----------------------------------------"
 
-# Load configuration to get the actual ports
 if [[ -f "$PROJECT_ROOT/.setup/.env.config" ]]; then
     source "$PROJECT_ROOT/.setup/.env.config"
 fi
 FRONTEND_PORT=${FRONTEND_PORT:-3000}
 API_PORT=${API_PORT:-2000}
 
-# Check if services are actually running
 if pm2 status | grep -q "frontend.*online" && pm2 status | grep -q "backend.*online"; then
-    echo ""
-    log_success "=== All services started successfully! ==="
-    echo ""
-    log_info "Your applications are now running:"
+    log_success "All services started successfully!"
     log_success "Frontend: http://localhost:$FRONTEND_PORT"
     log_success "Backend:  http://localhost:$API_PORT"
-    echo ""
-    log_info "Useful PM2 commands:"
-    log_info "  pm2 status    - Show process status"
-    log_info "  pm2 logs      - Show all logs"
-    log_info "  pm2 restart all - Restart all processes"
 else
-    echo ""
     log_warning "Some services failed to start properly"
-    log_info "Check the logs with: pm2 logs"
+    log_info "Check logs with: pm2 logs"
     exit 1
 fi

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # =============================================================================
-# Dependencies Installation Script
+# Dependencies Installation Script - Template SUPABASE NEXTJS FASTAPI
 # =============================================================================
 # This script installs all system dependencies required by the template
 # Should be run BEFORE setup.sh, build.sh, or deploy.sh
@@ -519,9 +519,8 @@ verify_installations() {
 
 # Main execution
 main() {
-    echo "============================================="
-    echo "   Template Dependencies Installation"
-    echo "============================================="
+    echo "Dependencies Installation"
+    echo "Template SUPABASE NEXTJS FASTAPI"
     echo ""
     
     check_sudo
@@ -542,16 +541,7 @@ main() {
     
     verify_installations
     
-    echo ""
     log_success "Dependencies installation completed!"
-    echo ""
-    log_info "Next steps:"
-    echo "  1. Log out and back in (for Docker group membership, if applicable)"
-    echo "  2. Run: make setup (or ./.setup/scripts/setup.sh)"
-    echo "  3. Run: make build (or ./.setup/scripts/build.sh)"
-    echo "  4. Run: make deploy (or ./.setup/scripts/deploy.sh)"
-    echo ""
-    log_info "Or simply run: make prod (for full production setup)"
 }
 
 # Run main function

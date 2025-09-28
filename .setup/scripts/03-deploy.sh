@@ -1,9 +1,36 @@
 #!/bin/bash
 
-# Main project deployment script
+# =============================================================================
+# Project Deployment Script - Template SUPABASE NEXTJS FASTAPI
+# =============================================================================
 # Executes all deployment scripts in order
+# =============================================================================
 
 set -e  # Stop script if a command fails
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Logging functions
+log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+log_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
 
 # Determine project root directory robustly
 # This script can be called from different locations
@@ -40,63 +67,33 @@ fi
 # Change to project root
 cd "$PROJECT_ROOT"
 
-# Check if running as root (deployment requires sudo but should be run by production user)
+# Check if running as root
 if [[ $EUID -eq 0 ]]; then
-    echo "Error: Deploy script should not be run as root!"
-    echo "Please switch to your production user and run the script again."
-    echo "The script will automatically request sudo privileges when needed."
-    echo "If you haven't created a production user yet, run:"
-    echo "  sudo ./.setup/scripts/00-setup-user.sh"
-    echo "Then switch to that user with:"
-    echo "  su - <your_production_user>"
+    log_error "Deploy script should not be run as root!"
+    log_info "Switch to your production user and run the script again."
     exit 1
 fi
 
-echo "========================================"
-echo "    PROJECT DEPLOYMENT SCRIPT"
-echo "========================================"
+echo "Project Deployment"
 echo "Project root: $PROJECT_ROOT"
-echo ""
+echo
 
-# 1) Generate Nginx configurations
-echo "1) Generating Nginx configurations..."
-echo "----------------------------------------"
+log_info "1) Generating Nginx configurations..."
 ./.setup/scripts/deploy/01-generate-nginx-configs.sh
-echo ""
+echo
 
-# 2) Install and configure Nginx
-echo "2) Installing and configuring Nginx..."
-echo "----------------------------------------"
-echo "⚠️  This step requires sudo privileges"
-echo "   The script will install: Nginx, Certbot, UFW"
-echo "   And configure the generated configurations"
+log_info "2) Installing and configuring Nginx..."
+log_warning "This step requires sudo privileges"
 sudo "./.setup/scripts/deploy/02-install-nginx.sh"
-echo ""
+echo
 
-# 3) Setup HTTPS with Let's Encrypt
-echo "3) Setting up HTTPS with Let's Encrypt..."
-echo "----------------------------------------"
-echo "⚠️  This step requires sudo privileges"
-echo "   The script will configure SSL certificates for all domains"
-echo "   Make sure your DNS records point to this server!"
+log_info "3) Setting up HTTPS with Let's Encrypt..."
+log_warning "This step requires sudo privileges"
 sudo "./.setup/scripts/deploy/03-setup-https.sh"
-echo ""
+echo
 
-echo "========================================"
-echo "  DEPLOYMENT COMPLETED SUCCESSFULLY !"
-echo "========================================"
-echo ""
-echo "The following steps have been completed:"
-echo "✓ Nginx configurations generation"
-echo "✓ Nginx installation and configuration"
-echo "✓ HTTPS/SSL certificates setup"
-echo ""
-echo "Your applications should now be accessible via HTTPS!"
-echo "Next steps:"
-echo "- Start your applications (frontend, backend, supabase)"
-echo "- Test the HTTPS URLs in your browser"
-echo "- Monitor SSL certificate auto-renewal"
-echo ""
-echo "Reloading Nginx to ensure all configurations are active..."
+log_success "Deployment completed successfully"
+
+log_info "Reloading Nginx..."
 sudo systemctl reload nginx
-echo "✓ Nginx reloaded successfully"
+log_success "Nginx reloaded"

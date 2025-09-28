@@ -1,7 +1,10 @@
 #!/bin/bash
 
-# Frontend build script
+# =============================================================================
+# Frontend Build Script - Template SUPABASE NEXTJS FASTAPI
+# =============================================================================
 # Builds the Next.js frontend application for production
+# =============================================================================
 
 set -e  # Stop script on error
 
@@ -62,7 +65,7 @@ fi
 
 FRONTEND_DIR="$PROJECT_ROOT/frontend"
 
-log_info "=== Frontend Build Process ==="
+log_info "Frontend Build Process"
 log_info "Project directory: $PROJECT_ROOT"
 log_info "Frontend directory: $FRONTEND_DIR"
 
@@ -82,23 +85,19 @@ fi
 log_info "Navigating to frontend directory..."
 cd "$FRONTEND_DIR"
 
-# Check if node_modules exists, if not install dependencies
 if [[ ! -d "node_modules" ]]; then
     log_info "Installing frontend dependencies..."
     npm install
-    log_success "Dependencies installed successfully"
+    log_success "Dependencies installed"
 else
     log_info "Dependencies already installed"
 fi
 
-# Check if build script exists in package.json
 if ! npm run 2>/dev/null | grep -q "build"; then
     log_error "Build script not found in package.json"
-    log_info "Please ensure your package.json has a 'build' script"
     exit 1
 fi
 
-# Build the frontend
 log_info "Building frontend application..."
 
 if npm run build; then
@@ -107,5 +106,3 @@ else
     log_error "Frontend build failed"
     exit 1
 fi
-
-log_success "=== Frontend build process completed ==="
