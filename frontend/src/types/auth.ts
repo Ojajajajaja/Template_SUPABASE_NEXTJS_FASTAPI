@@ -53,8 +53,34 @@ export interface AuthState {
   error: string | null;
 }
 
+// Types pour OAuth
+export interface OAuthProvider {
+  id: 'google' | 'github';
+  name: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+export interface OAuthCredentials {
+  provider: string;
+  token: string;
+  user_info?: {
+    email: string;
+    name: string;
+    picture?: string;
+    given_name?: string;
+    family_name?: string;
+  };
+}
+
+export interface OAuthResponse {
+  access_token: string;
+  user: User;
+  profile?: UserProfile;
+}
+
 export interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
+  loginWithOAuth: (credentials: OAuthCredentials) => Promise<void>;
   signup: (data: SignupData) => Promise<void>;
   logout: () => void;
   updateProfile: (data: ProfileUpdateData) => Promise<void>;

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/lib/hooks';
 import { ErrorMessage } from '@/components';
+import { OAuthButtons } from '@/components/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -57,6 +58,15 @@ export default function LoginPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleOAuthSuccess = () => {
+    router.push('/dashboard');
+  };
+
+  const handleOAuthError = (error: string) => {
+    console.error('OAuth error:', error);
+    // L'erreur sera aussi affichée via le contexte d'authentification
   };
 
   const resetForm = () => {
@@ -240,6 +250,13 @@ export default function LoginPage() {
                   }
                 </Button>
               </form>
+              
+              {/* Boutons OAuth */}
+              <OAuthButtons 
+                onSuccess={handleOAuthSuccess}
+                onError={handleOAuthError}
+                disabled={isSubmitting}
+              />
               
               <div className="mt-6 text-center">
                 <Button

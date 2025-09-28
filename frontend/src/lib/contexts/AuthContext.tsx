@@ -11,7 +11,8 @@ import {
   ProfileUpdateData,
   ApiException,
   User,
-  UserProfile
+  UserProfile,
+  OAuthCredentials
 } from '@/types';
 
 // État initial
@@ -181,6 +182,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Fonction de connexion OAuth
+  const loginWithOAuth = async (credentials: OAuthCredentials): Promise<void> => {
+    try {
+      dispatch({ type: 'AUTH_START' });
+      
+      const authResponse = await authService.loginWithOAuth(credentials);
+      const profile = authResponse.profile || await authService.getUserProfile();
+      
+      dispatch({ 
+        type: 'AUTH_SUCCESS', 
+        payload: { 
+          user: authResponse.user, 
+          profile 
+        } 
+      });
+      
+    } catch (error) {
+      const message = error instanceof ApiException ? error.message : 'OAuth login failed';
+      dispatch({ type: 'AUTH_FAILURE', payload: message });
+      throw error;
+    }
+  };
+
   // Fonction de déconnexion
   const logout = (): void => {
     authService.logout();
@@ -223,6 +247,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const contextValue: AuthContextType = {
     ...state,
     login,
+    loginWithOAuth,
     signup,
     logout,
     updateProfile,

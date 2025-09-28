@@ -7,6 +7,8 @@ import {
   SignupData,
   ProfileUpdateData,
   AuthResponse,
+  OAuthCredentials,
+  OAuthResponse,
 } from '@/types';
 
 export class AuthService {
@@ -47,6 +49,16 @@ export class AuthService {
 
   isAuthenticated(): boolean {
     return apiService.isAuthenticated();
+  }
+
+  async loginWithOAuth(credentials: OAuthCredentials): Promise<OAuthResponse> {
+    const response = await apiService.post<OAuthResponse>('/auth/oauth/login', credentials);
+    
+    if (response.access_token) {
+      apiService.setToken(response.access_token);
+    }
+    
+    return response;
   }
 
   getToken(): string | null {

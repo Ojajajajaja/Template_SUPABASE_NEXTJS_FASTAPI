@@ -145,10 +145,32 @@ NEXT_FRONTEND_PORT={env_vars.get('FRONTEND_PORT', '3000')}
 NEXT_PUBLIC_PROJECT_NAME={env_vars.get('PROJECT_NAME', 'TheSuperProject').strip('"')}
 """
     
+    # Add OAuth configuration
+    oauth_section = "\n# OAuth Configuration\n# Client IDs are safe to expose publicly\n"
+    
+    google_client_id = env_vars.get('GOOGLE_CLIENT_ID', '').strip()
+    
+    if google_client_id:
+        oauth_section += f"NEXT_PUBLIC_GOOGLE_CLIENT_ID={google_client_id}\n"
+    else:
+        oauth_section += "# NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id_here\n"
+    
+    oauth_section += "\n# Note: GitHub OAuth temporarily disabled\n"
+    oauth_section += "# GitHub configuration will be added in future updates\n"
+    
+    content += oauth_section
+    
     # Create the .env.local file in the frontend directory
     with open('frontend/.env.local', 'w') as f:
         f.write(content)
     print("Created .env.local for frontend")
+    
+    # Print OAuth status
+    if google_client_id:
+        print("OAuth providers configured:")
+        print("  ✅ Google OAuth enabled")
+    else:
+        print("⚠️  No OAuth providers configured. Users will only be able to use email/password authentication.")
 
 def create_backend_env(env_vars, jwt_secret, anon_key, service_role_key, deployment_mode='development'):
     """Create the backend .env file"""
@@ -170,6 +192,13 @@ API_PREFIX={env_vars.get('API_PREFIX', '/api/v1')}
 API_PORT={env_vars.get('API_PORT', '8000')}
 CORS_ORIGINS={cors_origins}
 """
+    
+    # Add OAuth secrets (backend only)
+    oauth_section = "\n# OAuth Secrets (BACKEND ONLY - Never expose these!)\n"
+    oauth_section += "# Note: GitHub OAuth temporarily disabled\n"
+    oauth_section += "# Future: GITHUB_CLIENT_SECRET will be added here\n"
+    
+    content += oauth_section
     
     with open('backend/.env', 'w') as f:
         f.write(content)

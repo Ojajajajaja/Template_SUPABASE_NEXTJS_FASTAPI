@@ -67,6 +67,11 @@ class ProfileUpdateData(BaseModel):
     full_name: Optional[str] = None
     phone: Optional[str] = None
 
+class OAuthCredentials(BaseModel):
+    provider: str  # "google" ou "github"
+    token: str
+    user_info: dict
+
 # Function to verify JWT token
 async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
@@ -222,6 +227,135 @@ async def login(login_data: LoginData):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
+        )
+
+# Route pour l'authentification OAuth
+@app.post(
+    f"{API_PREFIX}/auth/oauth/login",
+    tags=["Auth"],
+    summary="OAuth login",
+    description="Log in a user with OAuth provider (Google or GitHub)"
+)
+async def oauth_login(oauth_data: OAuthCredentials):
+    try:
+        # Use service key to handle OAuth
+        supabase_service: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+        
+        # Extract user information from OAuth data
+        user_info = oauth_data.user_info
+        email = user_info.get("email")
+        
+        if not email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email not found in OAuth user info"
+            )
+        
+        # Check if user already exists
+        existing_user = None
+        try:
+            # Try to find existing user by email
+            users_response = supabase_service.auth.admin.list_users()
+            if users_response:
+                existing_user = next(
+                    (user for user in users_response if user.email == email),
+                    None
+                )
+        except Exception:
+            pass  # Continue with user creation if lookup fails
+        
+        if existing_user:
+            # User exists, create a session
+            try:
+                # Generate a session for existing user
+                # Note: Supabase doesn't have direct "sign in as user" method
+                # This is a simplified approach - in production, you'd want more robust session management
+                
+                # For now, we'll create a temporary password and sign them in
+                # This is not ideal but works for demonstration
+                # In production, use proper OAuth flow with Supabase Auth
+                
+                # Return user info with a mock token (replace with proper implementation)
+                return {
+                    "access_token": f"oauth_temp_token_{existing_user.id}", 
+                    "user": existing_user,
+                    "profile": {
+                        "id": existing_user.id,
+                        "email": existing_user.email,
+                        "first_name": user_info.get("given_name", ""),
+                        "last_name": user_info.get("family_name", ""),
+                        "full_name": user_info.get("name", ""),
+                        "phone": "",
+                        "role": "user",
+                        "created_at": existing_user.created_at
+                    }
+                }
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Failed to create session for existing user: {str(e)}"
+                )
+        else:
+            # User doesn't exist, create new user
+            try:
+                # Prepare user data
+                first_name = user_info.get("given_name", "")
+                last_name = user_info.get("family_name", "")
+                full_name = user_info.get("name", f"{first_name} {last_name}".strip())
+                
+                # Generate a random password for OAuth users
+                import secrets
+                import string
+                random_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))
+                
+                # Create user with OAuth info
+                user_credentials: SignUpWithPasswordCredentials = {
+                    "email": email,
+                    "password": random_password,
+                    "options": {
+                        "data": {
+                            "first_name": first_name,
+                            "last_name": last_name,
+                            "full_name": full_name,
+                            "oauth_provider": oauth_data.provider,
+                            "oauth_verified": True
+                        }
+                    }
+                }
+                
+                user_response = supabase_service.auth.sign_up(user_credentials)
+                
+                if not user_response.user:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Failed to create user"
+                    )
+                
+                return {
+                    "access_token": f"oauth_temp_token_{user_response.user.id}",
+                    "user": user_response.user,
+                    "profile": {
+                        "id": user_response.user.id,
+                        "email": email,
+                        "first_name": first_name,
+                        "last_name": last_name,
+                        "full_name": full_name,
+                        "phone": "",
+                        "role": "user",
+                        "created_at": user_response.user.created_at
+                    }
+                }
+                
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Failed to create OAuth user: {str(e)}"
+                )
+                
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"OAuth login failed: {str(e)}"
         )
 
 # Route to update user profile
