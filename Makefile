@@ -151,28 +151,28 @@ backend-start-dev:
 		exit 1; \
 	fi
 	@echo "Starting FastAPI development server with auto-reload..."
-	@cd backend && uv run main.py dev
+	@cd backend && uv run run.py dev
 
 backend-stop-dev:
 	@echo "🛑 Stopping backend development server..."
-	@pkill -f "uv run main.py" || true
+	@pkill -f "uv run run.py" || true
 	@pkill -f "uvicorn main:app" || true
 	@echo "✓ Backend development server stopped"
 
 # Backend management - Production
 backend-start-prod:
-	@echo "⚙️  Starting backend with Gunicorn via main.py..."
+	@echo "⚙️  Starting backend with Gunicorn via run.py..."
 	@if [ ! -f "backend/.env" ]; then \
 		echo "⚠️  Backend .env file not found. Please run 'make setup' first."; \
 		exit 1; \
 	fi
 	@echo "Starting FastAPI production server with Gunicorn..."
-	@cd backend && uv run main.py prod
+	@cd backend && uv run run.py prod
 
 backend-stop-prod:
 	@echo "🛑 Stopping backend production server..."
 	@pkill -f "gunicorn main:app" || true
-	@pkill -f "uv run main.py prod" || true
+	@pkill -f "uv run run.py prod" || true
 	@echo "✓ Backend production server stopped"
 
 # Supabase management
@@ -228,7 +228,7 @@ status:
 	fi
 	@echo ""
 	@echo "Backend:"
-	@if pgrep -f "uv run main.py" > /dev/null; then \
+	@if pgrep -f "uv run run.py" > /dev/null; then \
 		echo "  🟢 Server running"; \
 	elif pgrep -f "uvicorn main:app" > /dev/null; then \
 		echo "  🟢 Development server running"; \
