@@ -1,10 +1,7 @@
 #!/bin/bash
 
-# =============================================================================
-# PM2 Setup Script - Template SUPABASE NEXTJS FASTAPI
-# =============================================================================
+# PM2 setup script
 # Configures PM2 for both backend and frontend services
-# =============================================================================
 
 set -e  # Stop script on error
 
@@ -68,24 +65,28 @@ BACKEND_DIR="$PROJECT_ROOT/backend"
 SETUP_DIR="$PROJECT_ROOT/.setup"
 ENV_CONFIG_FILE="$SETUP_DIR/.env.config"
 
-log_info "PM2 Setup Process"
+log_info "=== PM2 Setup Process ==="
 log_info "Project directory: $PROJECT_ROOT"
 
+# Check if PM2 is installed globally
 if ! command -v pm2 &> /dev/null; then
     log_error "PM2 is not installed"
+    log_info "Please run 'make install-deps' or './.setup/scripts/00-install-dependencies.sh' first"
     exit 1
 else
     log_info "PM2 is already installed"
 fi
 
+# Load environment configuration if it exists
 if [[ -f "$ENV_CONFIG_FILE" ]]; then
     log_info "Loading configuration from $ENV_CONFIG_FILE"
     source "$ENV_CONFIG_FILE"
     
+    # Clean domain values (remove quotes)
     FRONTEND_DOMAIN=$(echo "$FRONTEND_DOMAIN" | sed 's/^"\(.*\)"$/\1/' 2>/dev/null || echo "localhost")
     BACKEND_DOMAIN=$(echo "$BACKEND_DOMAIN" | sed 's/^"\(.*\)"$/\1/' 2>/dev/null || echo "localhost")
 else
-    log_warning "Configuration file not found, using defaults"
+    log_warning "Configuration file not found, using default values"
     FRONTEND_PORT=3000
     API_PORT=2000
     FRONTEND_DOMAIN="localhost"
@@ -100,11 +101,14 @@ log_info "Configuration:"
 log_info "  Frontend: $FRONTEND_DOMAIN:$FRONTEND_PORT"
 log_info "  Backend: $BACKEND_DOMAIN:$API_PORT"
 
+# Create PM2 ecosystem configuration
 log_info "Creating PM2 ecosystem configuration..."
 
+# Ensure we remove any existing configuration first
 rm -f "$PROJECT_ROOT/ecosystem.config.js" 2>/dev/null || true
 
-log_info "Generating ecosystem.config.js..."
+# Create our custom ecosystem configuration
+log_info "Generating ecosystem.config.js with custom configuration..."
 cat > "$PROJECT_ROOT/ecosystem.config.js" << 'EOF'
 module.exports = {
   apps: [
@@ -130,7 +134,7 @@ module.exports = {
       name: 'backend',
       cwd: './backend',
       script: 'python',
-      args: 'main.py prod',
+      args: 'run.py prod',
       env: {
         PYTHONPATH: './backend',
         API_PORT: process.env.API_PORT || 2000
@@ -146,19 +150,32 @@ module.exports = {
     }
   ]
 };
+EOF
+
 log_success "PM2 ecosystem configuration created"
 
+# Create logs directory
 log_info "Creating logs directory..."
 mkdir -p "$PROJECT_ROOT/logs"
 log_success "Logs directory created"
 
-if [[ ! -f "$BACKEND_DIR/main.py" ]]; then
-    log_error "Backend main.py not found in $BACKEND_DIR"
+# Check if backend run.py exists
+if [[ ! -f "$BACKEND_DIR/run.py" ]]; then
+    log_error "Backend run.py not found in $BACKEND_DIR"
     exit 1
 fi
 
+# Stop any existing PM2 processes and clear configuration
 log_info "Stopping any existing PM2 processes..."
 pm2 delete all 2>/dev/null || true
 pm2 kill 2>/dev/null || true
 
-log_success "PM2 setup completed successfully"
+log_info "Starting with clean PM2 state"
+
+log_success "=== PM2 setup completed successfully ==="
+echo ""
+log_info "PM2 configuration ready:"
+log_info "  ✓ ecosystem.config.js - PM2 configuration file"
+log_info "  ✓ logs/ - Directory for application logs"
+echo ""
+log_info "Ready to start applications with PM2!"
