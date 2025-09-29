@@ -23,13 +23,12 @@ This template provides a complete foundation for developing modern full-stack ap
 - **FastAPI** with Python 3.12+
 - **UV** for dependency management
 - **Gunicorn** for production
-- Automatically documented REST API
+- Automatically documented REST API via Swagger UI
 
 ### 🗄️ **Database**
 - **Supabase** (PostgreSQL + Auth + Storage)
 - Self-hosted with Docker
-- OAuth Authentication (Google, GitHub)
-- Row Level Security (RLS)
+- OAuth Authentication (Google)
 
 ## 🏗️ Project Architecture
 
@@ -64,51 +63,6 @@ This template provides a complete foundation for developing modern full-stack ap
 - **Python** 3.12+ and **UV**
 - **Make** (for simplified commands)
 
-### 🛠️ New VPS Installation
-
-1. **First VPS installation**
-   ```bash
-   # Clone the template
-   git clone https://github.com/Ojajajajaja/Template_SUPABASE_NEXTJS_FASTAPI.git my-project
-   cd my-project
-   
-   # VPS initialization script
-   bash "hello vps.sh"
-   ```
-
-2. **Configuration**
-   ```bash
-   # Create your configuration file
-   cp .setup/.env.config.example .setup/.env.config
-   # Edit the file with your settings (username, project, ports, domain)
-   nano .setup/.env.config
-   ```
-
-3. **Install dependencies**
-   ```bash
-   make deps
-   ```
-
-4. **User setup (avoid root)**
-   ```bash
-   make user
-   ```
-
-### 🌐 Production Deployment
-
-```bash
-# DNS configuration for your domain required before this step
-make prod
-```
-
-This command will automatically:
-- ✅ Install Supabase locally
-- ✅ Setup backend & frontend
-- ✅ Create .env files for all 3 services
-- ✅ Build and start with PM2 (multi-instance, auto-restart)
-- ✅ Configure Nginx and SSL automatically
-- ✅ Go live with demo interface
-
 ### 💻 Development Environment
 
 1. **Basic setup**
@@ -128,7 +82,7 @@ This command will automatically:
 This command will:
 - ✅ Install Supabase locally
 - ✅ Setup backend & frontend
-- ✅ Create .env files for development
+- ✅ Create .env files for development following .env.config (also generating securized keys needed by supabase)
 - ✅ Remove .git to allow your own repo
 
 3. **Start services**
@@ -138,10 +92,37 @@ This command will:
    
    # Frontend (Next.js) - new terminal
    cd frontend && npm run dev
+   # Before trying to bring your stuff in production mode, always try to build
+   cd frontend && npm run build
    
-   # Or use make commands
-   make supabase-start    # Start Supabase
+   # Database & Auth (Supabase)
+   make supabase-start    # Start Supabase (already started at the end of the dev command)
    ```
+
+### 🛠️ New VPS Installation
+
+1. **First VPS installation**
+   ```bash
+   # Clone the template
+   git clone YOUR_PROJECT_REPO my-project
+   cd my-project
+
+
+   # DNS configuration for your domain required before this step
+   chmod +x hello-vps.sh
+   ./hello-vps.sh
+   nano .setup/.env.config
+   make user
+   make prod
+   ```
+
+These command will automatically:
+- ✅ Install Supabase locally
+- ✅ Setup backend & frontend 
+- ✅ Create .env files for all 3 services following .env.config (also generating securized keys needed by supabase)
+- ✅ Build and start with PM2 (multi-instance, auto-restart)
+- ✅ Configure Nginx and SSL automatically
+- ✅ Go live with demo interface
 
 ## 🎯 Available Commands
 
@@ -174,37 +155,13 @@ This command will:
 | `make logs-frontend` | View frontend logs |
 | `make logs-backend` | View backend logs |
 
-### 💻 **Local Development**
-
-```bash
-# Backend (FastAPI)
-cd backend
-uv run run.py dev          # Development mode
-uv run run.py prod         # Production mode
-
-# Frontend (Next.js)
-cd frontend
-npm run dev                # Development server
-npm run build              # Production build
-npm start                  # Production server
-
-# Tests
-cd backend && uv run pytest
-cd frontend && npm test
-```
-
 ## 🌍 Default URLs
 
 ### 🔧 **Development**
 - **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8001
-- **Supabase Studio**: http://localhost:54323
-- **API Documentation**: http://localhost:8001/docs
-
-### 🚀 **Production** 
-- **Website**: https://your-domain.com
-- **API**: https://your-domain.com/api
-- **Supabase**: http://your-domain.com:54323
+- **Backend API**: http://localhost:2000
+- **Supabase**: http://localhost:8000
+- **API Documentation**: http://localhost:2000/docs
 
 ## ⚙️ Configuration
 
@@ -213,19 +170,52 @@ cd frontend && npm test
 The `.setup/.env.config` file contains all configuration:
 
 ```bash
-# Project information
-PROJECT_NAME="my-project"
-USERNAME="my-user"
-DOMAIN="my-domain.com"
-
-# Ports
+# Project Config
+API_PREFIX=/api/v1
+API_PORT=2000
 FRONTEND_PORT=3000
-BACKEND_PORT=8001
-SUPABASE_PORT=54323
+PROJECT_NAME="Oja Template"
+USERNAME_SUPABASE="oja"
+PASSWORD_SUPABASE="ojasupabase"
+PASSWORD_POSTGRES="ojapostgres"
 
-# Passwords (auto-generated)
-POSTGRES_PASSWORD="auto-password"
-SUPABASE_JWT_SECRET="auto-jwt-secret"
+# If you want multiple simultaneous Supabase databases on the same machine, complete this variable with a first port (4 numbers) and it will fill automatically the 6 other in the continuity, for example :
+# SUPABASE_PORT_RANGE=8000
+# Ports become :
+# KONG_HTTP_PORT=8000
+# KONG_HTTPS_PORT=8001
+# POSTGRES_PORT=8002
+# POOLER_PROXY_PORT_TRANSACTION=8003
+# STUDIO_PORT=8004
+# ANALYTICS_HOST_PORT=8005
+SUPABASE_PORT_RANGE=
+
+# Or manually change them
+POSTGRES_PORT=5432
+POOLER_PROXY_PORT_TRANSACTION=6543
+KONG_HTTP_PORT=8000
+KONG_HTTPS_PORT=8443
+STUDIO_PORT=3000
+ANALYTICS_HOST_PORT=4000
+
+# To avoid confirmation mail on user signup (saving time in dev mode, setup it right in production)
+ENABLE_EMAIL_AUTOCONFIRM=true
+
+# OAuth Configuration
+# Leave empty to disable OAuth providers
+GOOGLE_CLIENT_ID=
+
+# Production Config
+# Domain
+# Don't forget to add your domain in your DNS configuration
+FRONTEND_DOMAIN="example.com"
+BACKEND_DOMAIN="api.example.com"
+SUPABASE_DOMAIN="supabase.example.com"
+
+# User Configuration
+# To avoid using root user for production
+PROD_USERNAME="appuser"
+PROD_PASSWORD="SecurePassword123!"
 ```
 
 ### 🔐 **Environment Variables**
@@ -269,8 +259,8 @@ npm run test:coverage
 ## 📚 Documentation
 
 ### 🔗 **API Documentation**
-- **Swagger UI**: http://localhost:8001/docs
-- **ReDoc**: http://localhost:8001/redoc
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
 - Interactive documentation automatically generated
 
 ### 📖 **Technologies Used**
@@ -279,14 +269,6 @@ npm run test:coverage
 - [Supabase](https://supabase.com/) - Backend-as-a-Service
 - [Tailwind CSS](https://tailwindcss.com/) - CSS Framework
 - [Shadcn/UI](https://ui.shadcn.com/) - UI Components
-
-## 🤝 Contributing
-
-1. Fork the project
-2. Create a branch (`git checkout -b feature/my-feature`)
-3. Commit (`git commit -m 'Add a feature'`)
-4. Push (`git push origin feature/my-feature`) 
-5. Open a Pull Request
 
 ## 📄 License
 
@@ -301,6 +283,6 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 ---
 
 <div align="center">
-  <p><strong>Made with ❤️ for developers</strong></p>
-  <p><em>Production-ready template • 5-minute setup • Automated deployment</em></p>
+  <p><strong>Made with 3 for developers</strong></p>
+  <p><em>2025 Oja Template. Built with &lt;3 for developers.</em></p>
 </div>
