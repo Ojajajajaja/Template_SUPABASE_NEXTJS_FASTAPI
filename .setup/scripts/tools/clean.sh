@@ -119,8 +119,36 @@ safe_remove "frontend/tsconfig.tsbuildinfo" "TypeScript build info"
 
 print_step "🗄️  Supabase Cleanup..."
 
-# Local Supabase directory
-safe_remove "supabase" "local Supabase configuration"
+if [ -d "supabase" ]; then
+    print_warning "The supabase/ directory exists."
+    echo
+    echo -e "${YELLOW}This directory contains your local Supabase configuration.${NC}"
+    echo -e "${YELLOW}If Docker containers are running, they will be stopped first.${NC}"
+    echo
+    read -p "Do you want to delete the supabase/ directory? (y/N): " -n 1 -r
+    echo
+    
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        print_step "Stopping Docker containers..."
+        if cd supabase/ 2>/dev/null; then
+            if docker compose down 2>/dev/null; then
+                print_success "Docker containers stopped"
+            else
+                print_warning "No Docker containers to stop or docker compose not available"
+            fi
+            cd ..
+        else
+            print_warning "Cannot access supabase/ directory"
+        fi
+        
+        safe_remove "supabase" "local Supabase configuration"
+        print_warning "⚠️  Supabase directory has been deleted. You will need to run 'supabase init' to recreate it."
+    else
+        print_success "✅ supabase/ directory preserved"
+    fi
+else
+    print_warning "supabase/ directory does not exist"
+fi
 
 # =============================================================================
 # ENVIRONMENT VARIABLES
@@ -199,12 +227,3 @@ echo -e "${GREEN}╚════════════════════
 echo
 
 print_success "🎉 Project cleanup completed successfully!"
-echo
-print_step "To restart development:"
-echo -e "  ${BLUE}Backend:${NC}  cd backend && uv sync && uv run run.py dev"
-echo -e "  ${BLUE}Frontend:${NC} cd frontend && npm install && npm run dev"
-echo
-print_step "To reconfigure Supabase:"
-echo -e "  ${BLUE}Supabase:${NC} supabase init && supabase start"
-echo
-print_warning "Don't forget to recreate your .env files with the correct environment variables!"
