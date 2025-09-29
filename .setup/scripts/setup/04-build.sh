@@ -79,4 +79,24 @@ fi
 
 cd ../
 
+# Check and conditionally remove .git directory
+echo "Checking Git repository status..."
+if [ -d ".git" ]; then
+    # Check if still linked to the template repository
+    TEMPLATE_REPO="https://github.com/Ojajajajaja/Template_SUPABASE_NEXTJS_FASTAPI"
+    CURRENT_REMOTE=$(git remote get-url origin 2>/dev/null || echo "")
+    
+    if [[ "$CURRENT_REMOTE" == "$TEMPLATE_REPO" || "$CURRENT_REMOTE" == "$TEMPLATE_REPO.git" ]]; then
+        echo "Repository is still linked to template ($TEMPLATE_REPO)"
+        echo "Removing .git directory to disconnect from template..."
+        rm -rf .git
+        echo "✓ .git directory removed - project is now disconnected from template"
+    else
+        echo "Repository is linked to a different remote: $CURRENT_REMOTE"
+        echo "✓ Keeping .git directory (project has its own repository)"
+    fi
+else
+    echo "✓ No .git directory found - nothing to remove"
+fi
+
 log_success "Build completed successfully!"
